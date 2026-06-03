@@ -1,0 +1,25 @@
+# Core data handling
+pandas>=2.2.0,<3.0.0
+numpy>=1.26.0,<3.0.0
+
+# Machine learning
+scikit-learn>=1.5.0,<1.9.0
+scipy>=1.12.0,<2.0.0
+joblib>=1.4.0,<2.0.0
+
+# Explainable AI
+shap>=0.46.0,<0.53.0
+
+# Visualization and reports
+matplotlib>=3.8.0,<4.0.0
+plotly>=5.20.0,<7.0.0
+
+# Web UI
+streamlit>=1.37.0,<2.0.0
+
+# Utilities
+tqdm>=4.66.0,<5.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Exporting results
+openpyxl>=3.1.0,<4.0.0
