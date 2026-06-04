@@ -24,7 +24,7 @@ TOP_N_FEATURES = SHAP_LOCAL_TOP_N
 
 st.set_page_config(
     page_title="SmishKaBa",
-    page_icon="📩",
+    page_icon="logo.png",
     layout="centered",
 )
 
