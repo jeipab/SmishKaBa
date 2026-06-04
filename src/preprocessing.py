@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import json
 
 # Default input/output paths
 DEFAULT_INPUT_PATH = "data/raw/sms_dataset.csv"
@@ -208,8 +209,27 @@ def load_dataset(input_path: str) -> pd.DataFrame:
     raise ValueError("Only CSV and Excel files are supported.")
 
 
+def safe_standardize_label(value: object) -> str | None:
+    """Standardize labels without stopping the whole script."""
+    try:
+        return standardize_label(value)
+    except ValueError:
+        return None
+
+
+def add_removal_reason(df: pd.DataFrame, mask: pd.Series, reason: str) -> None:
+    """Append a removal reason to matching rows."""
+    df.loc[mask, "removal_reason"] = df.loc[mask, "removal_reason"].apply(
+        lambda current: f"{current}; {reason}" if current else reason
+    )
+
+
+def series_to_int_dict(series: pd.Series) -> dict:
+    """Convert value counts to JSON-safe dictionary."""
+    return {str(key): int(value) for key, value in series.items()}
+
 def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
-    """Main preprocessing pipeline."""
+    """Main preprocessing pipeline with audit outputs."""
     raw_df = load_dataset(input_path)
     raw_df = normalize_column_names(raw_df)
 
@@ -217,11 +237,20 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
 
     df = pd.DataFrame()
 
+    # Keep source references for audit/debugging
+    df["source_index"] = raw_df.index
+    df["csv_line"] = raw_df.index + 2
+    df["source_LABEL"] = raw_df["LABEL"]
+    df["source_TEXT"] = raw_df["TEXT"]
+    df["source_URL"] = raw_df["URL"]
+    df["source_EMAIL"] = raw_df["EMAIL"]
+    df["source_PHONE"] = raw_df["PHONE"]
+
     # Core text and label fields
     df["message"] = raw_df["TEXT"].apply(normalize_text)
     df["clean_text"] = raw_df["TEXT"].apply(clean_text_for_model)
-    df["label"] = raw_df["LABEL"].apply(standardize_label)
-    df["label_id"] = df["label"].map(LABEL_TO_ID).astype(int)
+    df["label"] = raw_df["LABEL"].apply(safe_standardize_label)
+    df["label_id"] = df["label"].map(LABEL_TO_ID)
 
     # Convert existing Yes/No indicators
     source_url = raw_df["URL"].apply(yes_no_to_binary)
@@ -249,30 +278,63 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
     df["email_count"] = np.maximum(detected_email_count, df["EMAIL"])
     df["phone_count"] = np.maximum(detected_phone_count, df["PHONE"])
 
-    # Remove unusable rows
-    df = df[
-        (df["message"].str.len() > 0)
-        & (df["clean_text"].str.len() > 0)
-        & (df["label"].isin(VALID_LABELS))
-    ].copy()
+    # Track why rows are removed
+    df["removal_reason"] = ""
 
-    before_dedup = len(df)
+    add_removal_reason(
+        df,
+        df["message"].str.len() == 0,
+        "empty_message",
+    )
 
-    # Remove messages with conflicting labels
-    conflicting_texts = (
-        df.groupby("clean_text")["label"]
+    add_removal_reason(
+        df,
+        df["clean_text"].str.len() == 0,
+        "empty_clean_text",
+    )
+
+    add_removal_reason(
+        df,
+        df["label"].isna() | ~df["label"].isin(VALID_LABELS),
+        "invalid_label",
+    )
+
+    # Only check conflicts among otherwise usable rows
+    usable_mask = df["removal_reason"].eq("")
+
+    conflicting_messages = (
+        df[usable_mask]
+        .groupby("message")["label"]
         .nunique()
         .loc[lambda x: x > 1]
         .index
     )
 
-    if len(conflicting_texts) > 0:
-        df = df[~df["clean_text"].isin(conflicting_texts)].copy()
+    add_removal_reason(
+        df,
+        usable_mask & df["message"].isin(conflicting_messages),
+        "same_message_conflicting_labels",
+    )
 
-    # Remove duplicate messages
-    df = df.drop_duplicates(subset=["clean_text"], keep="first").reset_index(drop=True)
+    # Separate kept and removed rows
+    removed_df = df[~df["removal_reason"].eq("")].copy()
+    cleaned_df = df[df["removal_reason"].eq("")].copy().reset_index(drop=True)
 
-    removed_count = before_dedup - len(df)
+    cleaned_df["label_id"] = cleaned_df["label"].map(LABEL_TO_ID).astype(int)
+
+    # Report possible duplicates but keep them
+    duplicate_mask = cleaned_df.duplicated(subset=["clean_text"], keep=False)
+    duplicate_report = cleaned_df[duplicate_mask].copy()
+    duplicate_report["duplicate_group_size"] = 0
+
+    if not duplicate_report.empty:
+        duplicate_report["duplicate_group_size"] = (
+            duplicate_report.groupby("clean_text")["clean_text"].transform("size")
+        )
+
+        duplicate_report = duplicate_report.sort_values(
+            by=["clean_text", "label", "csv_line"]
+        )
 
     output_columns = [
         "message",
@@ -287,25 +349,102 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
         "phone_count",
     ]
 
-    df = df[output_columns]
+    output_df = cleaned_df[output_columns].copy()
 
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_file, index=False, encoding="utf-8")
+
+    audit_dir = output_file.parent / "audit"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+
+    cleaned_path = output_file
+    removed_path = audit_dir / "preprocessing_removed_rows.csv"
+    duplicate_path = audit_dir / "preprocessing_duplicate_clean_text_report.csv"
+    summary_path = audit_dir / "preprocessing_summary.json"
+
+    output_df.to_csv(cleaned_path, index=False, encoding="utf-8")
+
+    removed_columns = [
+        "csv_line",
+        "source_LABEL",
+        "source_TEXT",
+        "source_URL",
+        "source_EMAIL",
+        "source_PHONE",
+        "message",
+        "clean_text",
+        "label",
+        "removal_reason",
+    ]
+
+    removed_df[removed_columns].to_csv(
+        removed_path,
+        index=False,
+        encoding="utf-8",
+    )
+
+    duplicate_columns = [
+        "csv_line",
+        "source_LABEL",
+        "source_TEXT",
+        "message",
+        "clean_text",
+        "label",
+        "URL",
+        "EMAIL",
+        "PHONE",
+        "duplicate_group_size",
+    ]
+
+    duplicate_report[duplicate_columns].to_csv(
+        duplicate_path,
+        index=False,
+        encoding="utf-8",
+    )
+
+    summary = {
+        "input_rows": int(len(raw_df)),
+        "rows_saved": int(len(output_df)),
+        "rows_removed": int(len(removed_df)),
+        "removed_by_reason": series_to_int_dict(
+            removed_df["removal_reason"].value_counts().sort_index()
+        ),
+        "possible_duplicate_clean_text_rows_kept": int(duplicate_mask.sum()),
+        "class_distribution_after_preprocessing": series_to_int_dict(
+            output_df["label"].value_counts().sort_index()
+        ),
+        "indicator_totals": series_to_int_dict(
+            output_df[["URL", "EMAIL", "PHONE"]].sum()
+        ),
+        "files": {
+            "cleaned_dataset": str(cleaned_path),
+            "removed_rows": str(removed_path),
+            "duplicate_report": str(duplicate_path),
+            "summary": str(summary_path),
+        },
+    }
+
+    with open(summary_path, "w", encoding="utf-8") as file:
+        json.dump(summary, file, indent=4)
 
     print("Preprocessing complete.")
     print(f"Input: {input_path}")
-    print(f"Output: {output_path}")
-    print(f"Rows saved: {len(df)}")
-    print(f"Duplicates/conflicts removed: {removed_count}")
+    print(f"Output: {cleaned_path}")
+    print(f"Rows saved: {len(output_df)}")
+    print(f"Rows removed: {len(removed_df)}")
 
     print("\nClass distribution:")
-    print(df["label"].value_counts().sort_index())
+    print(output_df["label"].value_counts().sort_index())
 
     print("\nIndicator totals:")
-    print(df[["URL", "EMAIL", "PHONE"]].sum())
+    print(output_df[["URL", "EMAIL", "PHONE"]].sum())
 
-    return df
+    print("\nAudit files:")
+    print(f"Removed rows: {removed_path}")
+    print(f"Duplicate report: {duplicate_path}")
+    print(f"Summary: {summary_path}")
+
+    return output_df
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
