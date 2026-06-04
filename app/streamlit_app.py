@@ -168,7 +168,7 @@ def display_probabilities(probabilities: dict[str, float]) -> None:
         }
     )
 
-    st.dataframe(probabilities_df, use_container_width=True, hide_index=True)
+    st.dataframe(probabilities_df, width='stretch', hide_index=True)
     st.bar_chart(probabilities_df.set_index("Class"))
 
 
@@ -181,7 +181,7 @@ def display_detected_features(features: dict[str, int]) -> None:
         }
     )
 
-    st.dataframe(feature_df, use_container_width=True, hide_index=True)
+    st.dataframe(feature_df, width='stretch', hide_index=True)
 
 
 def analyze_message(message: str) -> None:
@@ -220,7 +220,7 @@ def analyze_message(message: str) -> None:
         st.info("SHAP explanation is unavailable. Make sure the train split and MLR model exist.")
     else:
         st.write("Top features that influenced the predicted class:")
-        st.dataframe(shap_df, use_container_width=True, hide_index=True)
+        st.dataframe(shap_df, width='stretch', hide_index=True)
 
 
 def main() -> None:
