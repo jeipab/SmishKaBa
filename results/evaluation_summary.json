@@ -1,0 +1,18 @@
+{
+    "test_file": "data/processed/splits/test_split.csv",
+    "test_rows": 1997,
+    "class_distribution": {
+        "ham": 679,
+        "smishing": 660,
+        "spam": 658
+    },
+    "models_evaluated": [
+        "nb",
+        "svm",
+        "mlr"
+    ],
+    "files": {
+        "model_comparison": "results\\model_comparison.csv",
+        "evaluation_summary": "results\\evaluation_summary.json"
+    }
+}
