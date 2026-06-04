@@ -1,0 +1,7 @@
+class,feature_name,raw_feature_name,feature_type,mean_abs_shap
+smishing,PHONE,numeric__PHONE,structured,0.8636823370313722
+smishing,phone_count,numeric__phone_count,structured,0.6910642832684649
+smishing,URL,numeric__URL,structured,0.6749599509614903
+smishing,url_count,numeric__url_count,structured,0.28225567259130974
+smishing,EMAIL,numeric__EMAIL,structured,0.008032957884905528
+smishing,email_count,numeric__email_count,structured,0.008032957884905528

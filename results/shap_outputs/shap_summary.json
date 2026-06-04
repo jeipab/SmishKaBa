@@ -1,0 +1,22 @@
+{
+    "model_path": "artifacts/mlr_pipeline.joblib",
+    "train_path": "data/processed/splits/train_split.csv",
+    "test_path": "data/processed/splits/test_split.csv",
+    "target_class": "smishing",
+    "background_rows": 200,
+    "explained_rows": 500,
+    "feature_count": 5006,
+    "class_labels": [
+        "ham",
+        "smishing",
+        "spam"
+    ],
+    "files": {
+        "global_mean_abs_shap": "results\\shap_outputs\\global_mean_abs_shap.csv",
+        "target_top_features": "results\\shap_outputs\\top_smishing_features.csv",
+        "target_structured_contributions": "results\\shap_outputs\\smishing_structured_feature_contributions.csv",
+        "local_explanations": "results\\shap_outputs\\local_smishing_explanations.csv",
+        "target_plot": "results\\shap_outputs\\top_smishing_features.png",
+        "summary": "results\\shap_outputs\\shap_summary.json"
+    }
+}
