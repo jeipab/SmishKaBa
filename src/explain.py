@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import joblib
@@ -14,44 +13,43 @@ import shap
 from scipy import sparse
 from sklearn.pipeline import Pipeline
 
-from src.features import get_feature_names, prepare_feature_dataframe, prepare_target, validate_feature_columns
+from src.config import (
+    MLR_PIPELINE_PATH,
+    NUMERIC_FEATURE_COLUMNS,
+    RANDOM_STATE,
+    SHAP_BACKGROUND_SIZE,
+    SHAP_EXPLAIN_SIZE,
+    SHAP_LOCAL_ROWS,
+    SHAP_LOCAL_TOP_N,
+    SHAP_OUTPUTS_DIR,
+    SHAP_TARGET_CLASS,
+    TEST_SPLIT_PATH,
+    TRAIN_SPLIT_PATH,
+)
+from src.features import (
+    get_feature_names,
+    prepare_feature_dataframe,
+    prepare_target,
+    validate_feature_columns,
+)
+from src.utils import ensure_dir, require_file, save_json
 
 
-DEFAULT_TRAIN_PATH = "data/processed/splits/train_split.csv"
-DEFAULT_TEST_PATH = "data/processed/splits/test_split.csv"
-DEFAULT_MODEL_PATH = "artifacts/mlr_pipeline.joblib"
-DEFAULT_OUTPUT_DIR = "results/shap_outputs"
-
-RANDOM_STATE = 42
-BACKGROUND_SIZE = 200
-EXPLAIN_SIZE = 500
-LOCAL_ROWS = 20
-LOCAL_TOP_N = 10
-TARGET_CLASS = "smishing"
-
-STRUCTURED_FEATURES = {"URL", "EMAIL", "PHONE", "url_count", "email_count", "phone_count"}
+STRUCTURED_FEATURES = set(NUMERIC_FEATURE_COLUMNS)
 
 
-def load_split(path: str) -> tuple[pd.DataFrame, pd.Series]:
-    """Load a saved train/test split."""
-    file_path = Path(path)
-
-    if not file_path.exists():
-        raise FileNotFoundError(f"Split file not found: {file_path}")
-
+def load_split(path: str | Path) -> tuple[pd.DataFrame, pd.Series]:
+    """Load saved split."""
+    file_path = require_file(path, "Split file")
     df = pd.read_csv(file_path)
     validate_feature_columns(df, require_target=True)
 
     return prepare_feature_dataframe(df), prepare_target(df, use_label_id=False)
 
 
-def load_mlr_pipeline(model_path: str) -> Pipeline:
-    """Load the trained MLR pipeline."""
-    file_path = Path(model_path)
-
-    if not file_path.exists():
-        raise FileNotFoundError(f"MLR pipeline not found: {file_path}")
-
+def load_mlr_pipeline(model_path: str | Path) -> Pipeline:
+    """Load trained MLR pipeline."""
+    file_path = require_file(model_path, "MLR pipeline")
     pipeline = joblib.load(file_path)
 
     if not isinstance(pipeline, Pipeline):
@@ -81,7 +79,7 @@ def sample_rows(
 
 
 def to_dense(matrix) -> np.ndarray:
-    """Convert sparse matrix to dense array for SHAP."""
+    """Convert sparse matrix to dense."""
     if sparse.issparse(matrix):
         return matrix.toarray()
 
@@ -89,18 +87,14 @@ def to_dense(matrix) -> np.ndarray:
 
 
 def clean_feature_name(feature_name: str) -> str:
-    """Remove transformer prefixes."""
+    """Remove transformer prefix."""
     return feature_name.split("__", 1)[1] if "__" in feature_name else feature_name
 
 
 def get_feature_type(feature_name: str) -> str:
-    """Identify TF-IDF or structured feature."""
+    """Identify feature group."""
     cleaned = clean_feature_name(feature_name)
-
-    if cleaned in STRUCTURED_FEATURES:
-        return "structured"
-
-    return "tfidf"
+    return "structured" if cleaned in STRUCTURED_FEATURES else "tfidf"
 
 
 def normalize_shap_values(
@@ -109,7 +103,7 @@ def normalize_shap_values(
     n_samples: int,
     n_features: int,
 ) -> dict[str, np.ndarray]:
-    """Normalize SHAP output across SHAP versions."""
+    """Normalize SHAP output shape."""
     n_classes = len(class_labels)
 
     if isinstance(shap_values, list):
@@ -123,6 +117,7 @@ def normalize_shap_values(
     if values.ndim == 2:
         if n_classes != 1:
             raise ValueError("Unexpected 2D SHAP output for multiclass model.")
+
         return {class_labels[0]: values}
 
     if values.ndim != 3:
@@ -143,7 +138,7 @@ def build_global_importance(
     shap_by_class: dict[str, np.ndarray],
     feature_names: list[str],
 ) -> pd.DataFrame:
-    """Compute mean absolute SHAP values per class."""
+    """Compute mean absolute SHAP per class."""
     records = []
 
     for class_label, class_values in shap_by_class.items():
@@ -177,18 +172,20 @@ def build_local_explanations(
     local_rows: int,
     top_n: int,
 ) -> pd.DataFrame:
-    """Build local SHAP explanations for target-class examples."""
+    """Build local explanations for target-class examples."""
     model = pipeline.named_steps["model"]
+
+    if not hasattr(pipeline, "predict_proba"):
+        raise ValueError("MLR pipeline must support predict_proba for local output.")
 
     predictions = pipeline.predict(X_explain)
     probabilities = pipeline.predict_proba(X_explain)
 
     if target_class not in model.classes_:
-        raise ValueError(f"Target class not found in model classes: {target_class}")
+        raise ValueError(f"Target class not found: {target_class}")
 
     target_index = list(model.classes_).index(target_class)
     target_probabilities = probabilities[:, target_index]
-
     target_pred_indices = np.where(predictions == target_class)[0]
 
     if len(target_pred_indices) == 0:
@@ -230,25 +227,43 @@ def build_local_explanations(
     return pd.DataFrame(records)
 
 
-def save_target_plot(top_target_df: pd.DataFrame, output_path: Path) -> None:
-    """Save top target-class SHAP bar plot."""
+def save_target_plot(
+    top_target_df: pd.DataFrame,
+    output_path: Path,
+    target_class: str,
+) -> None:
+    """Save target-class SHAP bar plot."""
     plot_df = top_target_df.head(20).sort_values("mean_abs_shap", ascending=True)
 
     plt.figure(figsize=(8, 6))
     plt.barh(plot_df["feature_name"], plot_df["mean_abs_shap"])
     plt.xlabel("Mean |SHAP value|")
     plt.ylabel("Feature")
-    plt.title(f"Top SHAP Features for {TARGET_CLASS}")
+    plt.title(f"Top SHAP Features for {target_class}")
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
 
 
+def build_output_paths(output_dir: str | Path, target_class: str) -> dict[str, Path]:
+    """Prepare SHAP output paths."""
+    output_path = ensure_dir(output_dir)
+
+    return {
+        "global": output_path / "global_mean_abs_shap.csv",
+        "target_top": output_path / f"top_{target_class}_features.csv",
+        "structured": output_path / f"{target_class}_structured_feature_contributions.csv",
+        "local": output_path / f"local_{target_class}_explanations.csv",
+        "plot": output_path / f"top_{target_class}_features.png",
+        "summary": output_path / "shap_summary.json",
+    }
+
+
 def run_shap_explanation(
-    train_path: str,
-    test_path: str,
-    model_path: str,
-    output_dir: str,
+    train_path: str | Path,
+    test_path: str | Path,
+    model_path: str | Path,
+    output_dir: str | Path,
     background_size: int,
     explain_size: int,
     target_class: str,
@@ -256,9 +271,6 @@ def run_shap_explanation(
     local_top_n: int,
 ) -> None:
     """Run SHAP explanation workflow."""
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
     X_train, y_train = load_split(train_path)
     X_test, y_test = load_split(test_path)
     pipeline = load_mlr_pipeline(model_path)
@@ -286,7 +298,6 @@ def run_shap_explanation(
     )
 
     global_df = build_global_importance(shap_by_class, feature_names)
-
     target_global_df = global_df[global_df["class"] == target_class].copy()
     target_top_df = target_global_df.sort_values("mean_abs_shap", ascending=False)
 
@@ -306,46 +317,40 @@ def run_shap_explanation(
         top_n=local_top_n,
     )
 
-    global_path = output_path / "global_mean_abs_shap.csv"
-    target_top_path = output_path / f"top_{target_class}_features.csv"
-    structured_path = output_path / f"{target_class}_structured_feature_contributions.csv"
-    local_path = output_path / f"local_{target_class}_explanations.csv"
-    plot_path = output_path / f"top_{target_class}_features.png"
-    summary_path = output_path / "shap_summary.json"
+    paths = build_output_paths(output_dir, target_class)
 
-    global_df.to_csv(global_path, index=False, encoding="utf-8")
-    target_top_df.to_csv(target_top_path, index=False, encoding="utf-8")
-    target_structured_df.to_csv(structured_path, index=False, encoding="utf-8")
-    local_df.to_csv(local_path, index=False, encoding="utf-8")
-    save_target_plot(target_top_df, plot_path)
+    global_df.to_csv(paths["global"], index=False, encoding="utf-8")
+    target_top_df.to_csv(paths["target_top"], index=False, encoding="utf-8")
+    target_structured_df.to_csv(paths["structured"], index=False, encoding="utf-8")
+    local_df.to_csv(paths["local"], index=False, encoding="utf-8")
+    save_target_plot(target_top_df, paths["plot"], target_class)
 
     summary = {
-        "model_path": model_path,
-        "train_path": train_path,
-        "test_path": test_path,
+        "model_path": str(model_path),
+        "train_path": str(train_path),
+        "test_path": str(test_path),
         "target_class": target_class,
         "background_rows": int(len(X_background)),
         "explained_rows": int(len(X_explain)),
         "feature_count": int(len(feature_names)),
         "class_labels": class_labels,
         "files": {
-            "global_mean_abs_shap": str(global_path),
-            "target_top_features": str(target_top_path),
-            "target_structured_contributions": str(structured_path),
-            "local_explanations": str(local_path),
-            "target_plot": str(plot_path),
-            "summary": str(summary_path),
+            "global_mean_abs_shap": str(paths["global"]),
+            "target_top_features": str(paths["target_top"]),
+            "target_structured_contributions": str(paths["structured"]),
+            "local_explanations": str(paths["local"]),
+            "target_plot": str(paths["plot"]),
+            "summary": str(paths["summary"]),
         },
     }
 
-    with open(summary_path, "w", encoding="utf-8") as file:
-        json.dump(summary, file, indent=4)
+    save_json(summary, paths["summary"])
 
     print("SHAP explanation complete.")
     print(f"Target class: {target_class}")
     print(f"Explained rows: {len(X_explain)}")
     print(f"Feature count: {len(feature_names)}")
-    print(f"Outputs saved to: {output_path}")
+    print(f"Outputs saved to: {output_dir}")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -356,60 +361,60 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--train-path",
-        default=DEFAULT_TRAIN_PATH,
-        help=f"Path to train split. Default: {DEFAULT_TRAIN_PATH}",
+        default=str(TRAIN_SPLIT_PATH),
+        help=f"Path to train split. Default: {TRAIN_SPLIT_PATH}",
     )
 
     parser.add_argument(
         "--test-path",
-        default=DEFAULT_TEST_PATH,
-        help=f"Path to test split. Default: {DEFAULT_TEST_PATH}",
+        default=str(TEST_SPLIT_PATH),
+        help=f"Path to test split. Default: {TEST_SPLIT_PATH}",
     )
 
     parser.add_argument(
         "--model-path",
-        default=DEFAULT_MODEL_PATH,
-        help=f"Path to MLR pipeline. Default: {DEFAULT_MODEL_PATH}",
+        default=str(MLR_PIPELINE_PATH),
+        help=f"Path to MLR pipeline. Default: {MLR_PIPELINE_PATH}",
     )
 
     parser.add_argument(
         "--output-dir",
-        default=DEFAULT_OUTPUT_DIR,
-        help=f"Directory for SHAP outputs. Default: {DEFAULT_OUTPUT_DIR}",
+        default=str(SHAP_OUTPUTS_DIR),
+        help=f"Directory for SHAP outputs. Default: {SHAP_OUTPUTS_DIR}",
     )
 
     parser.add_argument(
         "--background-size",
         type=int,
-        default=BACKGROUND_SIZE,
-        help=f"Background sample size. Default: {BACKGROUND_SIZE}",
+        default=SHAP_BACKGROUND_SIZE,
+        help=f"Background sample size. Default: {SHAP_BACKGROUND_SIZE}",
     )
 
     parser.add_argument(
         "--explain-size",
         type=int,
-        default=EXPLAIN_SIZE,
-        help=f"Rows to explain. Default: {EXPLAIN_SIZE}",
+        default=SHAP_EXPLAIN_SIZE,
+        help=f"Rows to explain. Default: {SHAP_EXPLAIN_SIZE}",
     )
 
     parser.add_argument(
         "--target-class",
-        default=TARGET_CLASS,
-        help=f"Target class for focused outputs. Default: {TARGET_CLASS}",
+        default=SHAP_TARGET_CLASS,
+        help=f"Target class. Default: {SHAP_TARGET_CLASS}",
     )
 
     parser.add_argument(
         "--local-rows",
         type=int,
-        default=LOCAL_ROWS,
-        help=f"Number of local examples. Default: {LOCAL_ROWS}",
+        default=SHAP_LOCAL_ROWS,
+        help=f"Number of local examples. Default: {SHAP_LOCAL_ROWS}",
     )
 
     parser.add_argument(
         "--local-top-n",
         type=int,
-        default=LOCAL_TOP_N,
-        help=f"Top features per local example. Default: {LOCAL_TOP_N}",
+        default=SHAP_LOCAL_TOP_N,
+        help=f"Top features per local example. Default: {SHAP_LOCAL_TOP_N}",
     )
 
     return parser
