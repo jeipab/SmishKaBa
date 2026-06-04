@@ -8,29 +8,32 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from src.config import (
+    FEATURE_COLUMNS,
+    NUMERIC_FEATURE_COLUMNS,
+    TARGET_COLUMN,
+    TARGET_ID_COLUMN,
+    TEXT_COLUMN,
+    TFIDF_MAX_DF,
+    TFIDF_MAX_FEATURES,
+    TFIDF_MIN_DF,
+    TFIDF_NGRAM_RANGE,
+)
 
-TEXT_COLUMN = "clean_text"
 
-BINARY_FEATURE_COLUMNS = ["URL", "EMAIL", "PHONE"]
-COUNT_FEATURE_COLUMNS = ["url_count", "email_count", "phone_count"]
-NUMERIC_FEATURE_COLUMNS = BINARY_FEATURE_COLUMNS + COUNT_FEATURE_COLUMNS
-
-TARGET_COLUMN = "label"
-TARGET_ID_COLUMN = "label_id"
-
-REQUIRED_FEATURE_COLUMNS = [TEXT_COLUMN] + NUMERIC_FEATURE_COLUMNS
-REQUIRED_TRAINING_COLUMNS = REQUIRED_FEATURE_COLUMNS + [TARGET_COLUMN]
+REQUIRED_FEATURE_COLUMNS = FEATURE_COLUMNS
+REQUIRED_TRAINING_COLUMNS = FEATURE_COLUMNS + [TARGET_COLUMN]
 
 
 def validate_feature_columns(df: pd.DataFrame, require_target: bool = False) -> None:
-    """Check if required columns exist."""
-    required_columns = REQUIRED_TRAINING_COLUMNS if require_target else REQUIRED_FEATURE_COLUMNS
-    missing_columns = [col for col in required_columns if col not in df.columns]
+    """Check required columns."""
+    required = REQUIRED_TRAINING_COLUMNS if require_target else REQUIRED_FEATURE_COLUMNS
+    missing = [column for column in required if column not in df.columns]
 
-    if missing_columns:
+    if missing:
         raise ValueError(
-            f"Missing required columns: {missing_columns}. "
-            f"Expected columns: {required_columns}"
+            f"Missing required columns: {missing}. "
+            f"Expected columns: {required}"
         )
 
 
@@ -40,14 +43,14 @@ def prepare_feature_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     features = df[REQUIRED_FEATURE_COLUMNS].copy()
 
-    # Text input for TF-IDF
+    # Text column for TF-IDF
     features[TEXT_COLUMN] = features[TEXT_COLUMN].fillna("").astype(str)
 
-    # Structured numeric features
+    # Numeric URL/EMAIL/PHONE features
     for column in NUMERIC_FEATURE_COLUMNS:
         features[column] = pd.to_numeric(
             features[column],
-            errors="coerce"
+            errors="coerce",
         ).fillna(0)
 
     return features
@@ -64,10 +67,10 @@ def prepare_target(df: pd.DataFrame, use_label_id: bool = False) -> pd.Series:
 
 
 def build_feature_transformer(
-    max_features: int = 5000,
-    ngram_range: tuple[int, int] = (1, 2),
-    min_df: int = 2,
-    max_df: float = 0.95,
+    max_features: int = TFIDF_MAX_FEATURES,
+    ngram_range: tuple[int, int] = TFIDF_NGRAM_RANGE,
+    min_df: int = TFIDF_MIN_DF,
+    max_df: float = TFIDF_MAX_DF,
 ) -> ColumnTransformer:
     """Build TF-IDF + numeric feature transformer."""
     tfidf = TfidfVectorizer(
@@ -82,7 +85,6 @@ def build_feature_transformer(
         sublinear_tf=True,
     )
 
-    # Combine text vectorization with URL/EMAIL/PHONE features
     return ColumnTransformer(
         transformers=[
             ("tfidf", tfidf, TEXT_COLUMN),
