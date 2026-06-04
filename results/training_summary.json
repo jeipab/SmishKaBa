@@ -1,0 +1,29 @@
+{
+    "input_dataset": "data/processed/cleaned_sms_dataset.csv",
+    "split_strategy": "group",
+    "test_size": 0.2,
+    "random_state": 42,
+    "train_rows": 7987,
+    "test_rows": 1997,
+    "overlapping_clean_text_groups": 0,
+    "train_class_distribution": {
+        "ham": 2716,
+        "smishing": 2641,
+        "spam": 2630
+    },
+    "test_class_distribution": {
+        "ham": 679,
+        "smishing": 660,
+        "spam": 658
+    },
+    "saved_models": {
+        "nb": "artifacts\\nb_pipeline.joblib",
+        "svm": "artifacts\\svm_pipeline.joblib",
+        "mlr": "artifacts\\mlr_pipeline.joblib"
+    },
+    "files": {
+        "train_split": "data\\processed\\splits\\train_split.csv",
+        "test_split": "data\\processed\\splits\\test_split.csv",
+        "training_summary": "results\\training_summary.json"
+    }
+}
