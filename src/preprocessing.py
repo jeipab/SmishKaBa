@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
 import unicodedata
 from pathlib import Path
@@ -11,26 +12,76 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import json
 
-# Default input/output paths
 DEFAULT_INPUT_PATH = "data/raw/sms_dataset.csv"
 DEFAULT_OUTPUT_PATH = "data/processed/cleaned_sms_dataset.csv"
 
-# Expected dataset columns based on the uploaded CSV
 REQUIRED_COLUMNS = ["LABEL", "TEXT", "URL", "EMAIL", "PHONE"]
 
-# Fixed label encoding for consistency across training/evaluation
-LABEL_TO_ID = {
-    "ham": 0,
-    "spam": 1,
-    "smishing": 2,
-}
-
+LABEL_TO_ID = {"ham": 0, "spam": 1, "smishing": 2}
 VALID_LABELS = set(LABEL_TO_ID.keys())
 
+LABEL_ALIASES = {
+    "ham": "ham",
+    "normal": "ham",
+    "legitimate": "ham",
+    "legit": "ham",
+    "safe": "ham",
+    "spam": "spam",
+    "promo": "spam",
+    "promotion": "spam",
+    "advertisement": "spam",
+    "marketing": "spam",
+    "smishing": "smishing",
+    "smish": "smishing",
+    "phishing": "smishing",
+    "phish": "smishing",
+    "scam": "smishing",
+    "fraud": "smishing",
+}
 
-# Basic patterns for extracting message-level indicators
+TRUE_VALUES = {"yes", "y", "true", "1", "present"}
+FALSE_VALUES = {"no", "n", "false", "0", "none", ""}
+
+OUTPUT_COLUMNS = [
+    "message",
+    "clean_text",
+    "label",
+    "label_id",
+    "URL",
+    "EMAIL",
+    "PHONE",
+    "url_count",
+    "email_count",
+    "phone_count",
+]
+
+REMOVED_COLUMNS = [
+    "csv_line",
+    "source_LABEL",
+    "source_TEXT",
+    "source_URL",
+    "source_EMAIL",
+    "source_PHONE",
+    "message",
+    "clean_text",
+    "label",
+    "removal_reason",
+]
+
+DUPLICATE_COLUMNS = [
+    "csv_line",
+    "source_LABEL",
+    "source_TEXT",
+    "message",
+    "clean_text",
+    "label",
+    "URL",
+    "EMAIL",
+    "PHONE",
+    "duplicate_group_size",
+]
+
 URL_PATTERN = re.compile(
     r"""
     \b(?:https?://|www\.)[^\s]+
@@ -51,38 +102,80 @@ PHONE_PATTERN = re.compile(
 
 
 def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
-    """Standardize column names for easier validation."""
+    """Standardize column names."""
     df = df.copy()
     df.columns = [str(col).strip().upper() for col in df.columns]
     return df
 
 
 def normalize_text(value: object) -> str:
-    """Normalize raw SMS text without removing useful content."""
+    """Normalize raw SMS text."""
     if pd.isna(value):
         return ""
 
     text = str(value)
     text = html.unescape(text)
     text = unicodedata.normalize("NFKC", text)
-
-    # Clean common encoding/noise issues
     text = text.replace("\u00a0", " ")
     text = text.replace("\ufffd", " ")
     text = text.replace('""', '"')
-
-    # Normalize spacing
     text = re.sub(r"[\r\n\t]+", " ", text)
     text = re.sub(r"\s+", " ", text)
 
     return text.strip().strip('"').strip()
 
 
+def standardize_label(value: object) -> str:
+    """Map labels to ham, spam, or smishing."""
+    label = normalize_text(value).lower()
+    label = re.sub(r"[^a-z0-9]+", "_", label).strip("_")
+
+    if label not in LABEL_ALIASES:
+        raise ValueError(f"Unknown label found: {value}")
+
+    return LABEL_ALIASES[label]
+
+
+def safe_standardize_label(value: object) -> str | None:
+    """Return None for invalid labels."""
+    try:
+        return standardize_label(value)
+    except ValueError:
+        return None
+
+
+def yes_no_to_binary(value: object) -> int:
+    """Convert Yes/No-like values to 1/0."""
+    if pd.isna(value):
+        return 0
+
+    value = str(value).strip().lower()
+
+    if value in TRUE_VALUES:
+        return 1
+
+    if value in FALSE_VALUES:
+        return 0
+
+    return 0
+
+
+def count_urls(text: str) -> int:
+    """Count URLs while avoiding email domains."""
+    text = EMAIL_PATTERN.sub(" ", normalize_text(text))
+    return len(URL_PATTERN.findall(text))
+
+
+def count_emails(text: str) -> int:
+    """Count email addresses."""
+    return len(EMAIL_PATTERN.findall(normalize_text(text)))
+
+
 def count_valid_phones(text: str) -> int:
-    """Count likely phone numbers based on digit length."""
+    """Count likely phone numbers."""
     count = 0
 
-    for match in PHONE_PATTERN.finditer(text):
+    for match in PHONE_PATTERN.finditer(normalize_text(text)):
         digits = re.sub(r"\D", "", match.group())
 
         if 7 <= len(digits) <= 15:
@@ -92,84 +185,28 @@ def count_valid_phones(text: str) -> int:
 
 
 def replace_phone_tokens(text: str) -> str:
-    """Replace likely phone numbers with a stable token."""
+    """Replace likely phone numbers with a token."""
     def replacer(match: re.Match) -> str:
         digits = re.sub(r"\D", "", match.group())
-
-        if 7 <= len(digits) <= 15:
-            return " phonetoken "
-
-        return match.group()
+        return " phonetoken " if 7 <= len(digits) <= 15 else match.group()
 
     return PHONE_PATTERN.sub(replacer, text)
 
 
 def clean_text_for_model(value: object) -> str:
-    """Create cleaned text to be used later for TF-IDF."""
+    """Create cleaned text for TF-IDF."""
     text = normalize_text(value).lower()
-
-    # Replace sensitive/variable patterns with stable tokens
     text = EMAIL_PATTERN.sub(" emailtoken ", text)
     text = URL_PATTERN.sub(" urltoken ", text)
     text = replace_phone_tokens(text)
-
-    # Keep letters, numbers, apostrophes, and spaces
     text = re.sub(r"[^a-z0-9\s']", " ", text)
     text = re.sub(r"\s+", " ", text)
 
     return text.strip()
 
 
-def standardize_label(value: object) -> str:
-    """Convert label values into ham, spam, or smishing."""
-    label = normalize_text(value).lower()
-    label = re.sub(r"[^a-z0-9]+", "_", label).strip("_")
-
-    label_map = {
-        "ham": "ham",
-        "normal": "ham",
-        "legitimate": "ham",
-        "legit": "ham",
-        "safe": "ham",
-
-        "spam": "spam",
-        "promo": "spam",
-        "promotion": "spam",
-        "advertisement": "spam",
-        "marketing": "spam",
-
-        "smishing": "smishing",
-        "smish": "smishing",
-        "phishing": "smishing",
-        "phish": "smishing",
-        "scam": "smishing",
-        "fraud": "smishing",
-    }
-
-    if label not in label_map:
-        raise ValueError(f"Unknown label found: {value}")
-
-    return label_map[label]
-
-
-def yes_no_to_binary(value: object) -> int:
-    """Convert Yes/No indicator values into 1/0."""
-    if pd.isna(value):
-        return 0
-
-    value = str(value).strip().lower()
-
-    if value in {"yes", "y", "true", "1", "present"}:
-        return 1
-
-    if value in {"no", "n", "false", "0", "none", ""}:
-        return 0
-
-    return 0
-
-
 def validate_columns(df: pd.DataFrame) -> None:
-    """Ensure the uploaded dataset has the required columns."""
+    """Check required columns."""
     missing_columns = [col for col in REQUIRED_COLUMNS if col not in df.columns]
 
     if missing_columns:
@@ -187,9 +224,7 @@ def load_dataset(input_path: str) -> pd.DataFrame:
         raise FileNotFoundError(f"Input file not found: {path}")
 
     if path.suffix.lower() == ".csv":
-        encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
-
-        for encoding in encodings:
+        for encoding in ["utf-8", "utf-8-sig", "latin-1", "cp1252"]:
             try:
                 return pd.read_csv(path, encoding=encoding)
             except UnicodeDecodeError:
@@ -209,35 +244,23 @@ def load_dataset(input_path: str) -> pd.DataFrame:
     raise ValueError("Only CSV and Excel files are supported.")
 
 
-def safe_standardize_label(value: object) -> str | None:
-    """Standardize labels without stopping the whole script."""
-    try:
-        return standardize_label(value)
-    except ValueError:
-        return None
-
-
 def add_removal_reason(df: pd.DataFrame, mask: pd.Series, reason: str) -> None:
-    """Append a removal reason to matching rows."""
+    """Append removal reason to matching rows."""
     df.loc[mask, "removal_reason"] = df.loc[mask, "removal_reason"].apply(
         lambda current: f"{current}; {reason}" if current else reason
     )
 
 
-def series_to_int_dict(series: pd.Series) -> dict:
-    """Convert value counts to JSON-safe dictionary."""
+def series_to_int_dict(series: pd.Series) -> dict[str, int]:
+    """Convert counts to JSON-safe dict."""
     return {str(key): int(value) for key, value in series.items()}
 
-def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
-    """Main preprocessing pipeline with audit outputs."""
-    raw_df = load_dataset(input_path)
-    raw_df = normalize_column_names(raw_df)
 
-    validate_columns(raw_df)
-
+def build_working_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
+    """Build cleaned fields and feature-ready columns."""
     df = pd.DataFrame()
 
-    # Keep source references for audit/debugging
+    # Source fields for audit tracking
     df["source_index"] = raw_df.index
     df["csv_line"] = raw_df.index + 2
     df["source_LABEL"] = raw_df["LABEL"]
@@ -246,60 +269,44 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
     df["source_EMAIL"] = raw_df["EMAIL"]
     df["source_PHONE"] = raw_df["PHONE"]
 
-    # Core text and label fields
+    # Core fields
     df["message"] = raw_df["TEXT"].apply(normalize_text)
     df["clean_text"] = raw_df["TEXT"].apply(clean_text_for_model)
     df["label"] = raw_df["LABEL"].apply(safe_standardize_label)
     df["label_id"] = df["label"].map(LABEL_TO_ID)
 
-    # Convert existing Yes/No indicators
+    # Original indicators
     source_url = raw_df["URL"].apply(yes_no_to_binary)
     source_email = raw_df["EMAIL"].apply(yes_no_to_binary)
     source_phone = raw_df["PHONE"].apply(yes_no_to_binary)
 
-    # Generate backup counts directly from text
-    detected_url_count = df["message"].apply(
-        lambda text: len(URL_PATTERN.findall(text))
-    ).astype(int)
-
-    detected_email_count = df["message"].apply(
-        lambda text: len(EMAIL_PATTERN.findall(text))
-    ).astype(int)
-
+    # Detected indicators from text
+    detected_url_count = df["message"].apply(count_urls).astype(int)
+    detected_email_count = df["message"].apply(count_emails).astype(int)
     detected_phone_count = df["message"].apply(count_valid_phones).astype(int)
 
-    # Use source indicators, but also catch indicators found in text
+    # Final binary indicators
     df["URL"] = np.maximum(source_url, (detected_url_count > 0).astype(int))
     df["EMAIL"] = np.maximum(source_email, (detected_email_count > 0).astype(int))
     df["PHONE"] = np.maximum(source_phone, (detected_phone_count > 0).astype(int))
 
-    # Keep counts as optional structured features
+    # Count features
     df["url_count"] = np.maximum(detected_url_count, df["URL"])
     df["email_count"] = np.maximum(detected_email_count, df["EMAIL"])
     df["phone_count"] = np.maximum(detected_phone_count, df["PHONE"])
 
-    # Track why rows are removed
+    return df
+
+
+def mark_removed_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Tag unusable or conflicting rows."""
+    df = df.copy()
     df["removal_reason"] = ""
 
-    add_removal_reason(
-        df,
-        df["message"].str.len() == 0,
-        "empty_message",
-    )
+    add_removal_reason(df, df["message"].str.len() == 0, "empty_message")
+    add_removal_reason(df, df["clean_text"].str.len() == 0, "empty_clean_text")
+    add_removal_reason(df, df["label"].isna() | ~df["label"].isin(VALID_LABELS), "invalid_label")
 
-    add_removal_reason(
-        df,
-        df["clean_text"].str.len() == 0,
-        "empty_clean_text",
-    )
-
-    add_removal_reason(
-        df,
-        df["label"].isna() | ~df["label"].isin(VALID_LABELS),
-        "invalid_label",
-    )
-
-    # Only check conflicts among otherwise usable rows
     usable_mask = df["removal_reason"].eq("")
 
     conflicting_messages = (
@@ -316,13 +323,11 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
         "same_message_conflicting_labels",
     )
 
-    # Separate kept and removed rows
-    removed_df = df[~df["removal_reason"].eq("")].copy()
-    cleaned_df = df[df["removal_reason"].eq("")].copy().reset_index(drop=True)
+    return df
 
-    cleaned_df["label_id"] = cleaned_df["label"].map(LABEL_TO_ID).astype(int)
 
-    # Report possible duplicates but keep them
+def build_duplicate_report(cleaned_df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Report duplicate clean_text rows but keep them."""
     duplicate_mask = cleaned_df.duplicated(subset=["clean_text"], keep=False)
     duplicate_report = cleaned_df[duplicate_mask].copy()
     duplicate_report["duplicate_group_size"] = 0
@@ -336,97 +341,38 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
             by=["clean_text", "label", "csv_line"]
         )
 
-    output_columns = [
-        "message",
-        "clean_text",
-        "label",
-        "label_id",
-        "URL",
-        "EMAIL",
-        "PHONE",
-        "url_count",
-        "email_count",
-        "phone_count",
-    ]
+    return duplicate_report, int(duplicate_mask.sum())
 
-    output_df = cleaned_df[output_columns].copy()
 
-    output_file = Path(output_path)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    audit_dir = output_file.parent / "audit"
-    audit_dir.mkdir(parents=True, exist_ok=True)
-
-    cleaned_path = output_file
-    removed_path = audit_dir / "preprocessing_removed_rows.csv"
-    duplicate_path = audit_dir / "preprocessing_duplicate_clean_text_report.csv"
-    summary_path = audit_dir / "preprocessing_summary.json"
-
+def save_outputs(
+    output_df: pd.DataFrame,
+    removed_df: pd.DataFrame,
+    duplicate_report: pd.DataFrame,
+    summary: dict,
+    cleaned_path: Path,
+    removed_path: Path,
+    duplicate_path: Path,
+    summary_path: Path,
+) -> None:
+    """Save cleaned data and audit files."""
     output_df.to_csv(cleaned_path, index=False, encoding="utf-8")
-
-    removed_columns = [
-        "csv_line",
-        "source_LABEL",
-        "source_TEXT",
-        "source_URL",
-        "source_EMAIL",
-        "source_PHONE",
-        "message",
-        "clean_text",
-        "label",
-        "removal_reason",
-    ]
-
-    removed_df[removed_columns].to_csv(
-        removed_path,
-        index=False,
-        encoding="utf-8",
-    )
-
-    duplicate_columns = [
-        "csv_line",
-        "source_LABEL",
-        "source_TEXT",
-        "message",
-        "clean_text",
-        "label",
-        "URL",
-        "EMAIL",
-        "PHONE",
-        "duplicate_group_size",
-    ]
-
-    duplicate_report[duplicate_columns].to_csv(
-        duplicate_path,
-        index=False,
-        encoding="utf-8",
-    )
-
-    summary = {
-        "input_rows": int(len(raw_df)),
-        "rows_saved": int(len(output_df)),
-        "rows_removed": int(len(removed_df)),
-        "removed_by_reason": series_to_int_dict(
-            removed_df["removal_reason"].value_counts().sort_index()
-        ),
-        "possible_duplicate_clean_text_rows_kept": int(duplicate_mask.sum()),
-        "class_distribution_after_preprocessing": series_to_int_dict(
-            output_df["label"].value_counts().sort_index()
-        ),
-        "indicator_totals": series_to_int_dict(
-            output_df[["URL", "EMAIL", "PHONE"]].sum()
-        ),
-        "files": {
-            "cleaned_dataset": str(cleaned_path),
-            "removed_rows": str(removed_path),
-            "duplicate_report": str(duplicate_path),
-            "summary": str(summary_path),
-        },
-    }
+    removed_df[REMOVED_COLUMNS].to_csv(removed_path, index=False, encoding="utf-8")
+    duplicate_report[DUPLICATE_COLUMNS].to_csv(duplicate_path, index=False, encoding="utf-8")
 
     with open(summary_path, "w", encoding="utf-8") as file:
         json.dump(summary, file, indent=4)
 
+
+def print_summary(
+    input_path: str,
+    cleaned_path: Path,
+    output_df: pd.DataFrame,
+    removed_df: pd.DataFrame,
+    removed_path: Path,
+    duplicate_path: Path,
+    summary_path: Path,
+) -> None:
+    """Print compact preprocessing report."""
     print("Preprocessing complete.")
     print(f"Input: {input_path}")
     print(f"Output: {cleaned_path}")
@@ -444,11 +390,81 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
     print(f"Duplicate report: {duplicate_path}")
     print(f"Summary: {summary_path}")
 
+
+def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
+    """Run preprocessing and audit export."""
+    raw_df = normalize_column_names(load_dataset(input_path))
+    validate_columns(raw_df)
+
+    df = build_working_dataframe(raw_df)
+    df = mark_removed_rows(df)
+
+    removed_df = df[~df["removal_reason"].eq("")].copy()
+    cleaned_df = df[df["removal_reason"].eq("")].copy().reset_index(drop=True)
+    cleaned_df["label_id"] = cleaned_df["label"].map(LABEL_TO_ID).astype(int)
+
+    duplicate_report, duplicate_count = build_duplicate_report(cleaned_df)
+    output_df = cleaned_df[OUTPUT_COLUMNS].copy()
+
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    audit_dir = output_file.parent / "audit"
+    audit_dir.mkdir(parents=True, exist_ok=True)
+
+    cleaned_path = output_file
+    removed_path = audit_dir / "preprocessing_removed_rows.csv"
+    duplicate_path = audit_dir / "preprocessing_duplicate_clean_text_report.csv"
+    summary_path = audit_dir / "preprocessing_summary.json"
+
+    summary = {
+        "input_rows": int(len(raw_df)),
+        "rows_saved": int(len(output_df)),
+        "rows_removed": int(len(removed_df)),
+        "removed_by_reason": series_to_int_dict(
+            removed_df["removal_reason"].value_counts().sort_index()
+        ),
+        "possible_duplicate_clean_text_rows_kept": duplicate_count,
+        "class_distribution_after_preprocessing": series_to_int_dict(
+            output_df["label"].value_counts().sort_index()
+        ),
+        "indicator_totals": series_to_int_dict(
+            output_df[["URL", "EMAIL", "PHONE"]].sum()
+        ),
+        "files": {
+            "cleaned_dataset": str(cleaned_path),
+            "removed_rows": str(removed_path),
+            "duplicate_report": str(duplicate_path),
+            "summary": str(summary_path),
+        },
+    }
+
+    save_outputs(
+        output_df,
+        removed_df,
+        duplicate_report,
+        summary,
+        cleaned_path,
+        removed_path,
+        duplicate_path,
+        summary_path,
+    )
+
+    print_summary(
+        input_path,
+        cleaned_path,
+        output_df,
+        removed_df,
+        removed_path,
+        duplicate_path,
+        summary_path,
+    )
+
     return output_df
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    """Set command-line arguments."""
+    """Create CLI parser."""
     parser = argparse.ArgumentParser(
         description="Preprocess raw SMS dataset for SmishKaBa."
     )
@@ -471,14 +487,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """Run preprocessing from the command line."""
-    parser = build_arg_parser()
-    args = parser.parse_args()
-
-    preprocess_dataset(
-        input_path=args.input,
-        output_path=args.output,
-    )
+    """CLI entry point."""
+    args = build_arg_parser().parse_args()
+    preprocess_dataset(input_path=args.input, output_path=args.output)
 
 
 if __name__ == "__main__":
