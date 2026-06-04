@@ -12,6 +12,7 @@ import pandas as pd
 from scipy.special import softmax
 from sklearn.pipeline import Pipeline
 
+from src.config import FEATURE_COLUMNS, MLR_PIPELINE_PATH
 from src.preprocessing import (
     clean_text_for_model,
     count_emails,
@@ -19,19 +20,12 @@ from src.preprocessing import (
     count_valid_phones,
     normalize_text,
 )
-from src.features import REQUIRED_FEATURE_COLUMNS
+from src.utils import require_file
 
 
-DEFAULT_MODEL_PATH = "artifacts/mlr_pipeline.joblib"
-
-
-def load_pipeline(model_path: str = DEFAULT_MODEL_PATH) -> Pipeline:
-    """Load a saved sklearn pipeline."""
-    path = Path(model_path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"Model pipeline not found: {path}")
-
+def load_pipeline(model_path: str | Path = MLR_PIPELINE_PATH) -> Pipeline:
+    """Load saved sklearn pipeline."""
+    path = require_file(model_path, "Model pipeline")
     pipeline = joblib.load(path)
 
     if not isinstance(pipeline, Pipeline):
@@ -44,7 +38,7 @@ def load_pipeline(model_path: str = DEFAULT_MODEL_PATH) -> Pipeline:
 
 
 def build_input_dataframe(message: str) -> pd.DataFrame:
-    """Convert one SMS message into feature-ready input."""
+    """Convert one SMS into feature-ready input."""
     normalized_message = normalize_text(message)
 
     if not normalized_message:
@@ -66,11 +60,11 @@ def build_input_dataframe(message: str) -> pd.DataFrame:
         "phone_count": int(phone_count),
     }
 
-    return pd.DataFrame([row], columns=REQUIRED_FEATURE_COLUMNS)
+    return pd.DataFrame([row], columns=FEATURE_COLUMNS)
 
 
 def get_class_probabilities(pipeline: Pipeline, X: pd.DataFrame) -> dict[str, float]:
-    """Return class probabilities when available."""
+    """Return class probabilities or score-based estimates."""
     model = pipeline.named_steps["model"]
     class_labels = [str(label) for label in model.classes_]
 
@@ -97,7 +91,7 @@ def get_class_probabilities(pipeline: Pipeline, X: pd.DataFrame) -> dict[str, fl
 
 
 def get_risk_message(predicted_label: str) -> str:
-    """Return a short user-facing warning."""
+    """Return short result message."""
     messages = {
         "ham": "This message appears to be normal.",
         "spam": "This message appears to be unsolicited or promotional.",
@@ -133,7 +127,10 @@ def predict_sms(message: str, pipeline: Pipeline) -> dict:
     }
 
 
-def predict_from_text(message: str, model_path: str = DEFAULT_MODEL_PATH) -> dict:
+def predict_from_text(
+    message: str,
+    model_path: str | Path = MLR_PIPELINE_PATH,
+) -> dict:
     """Load model and predict one SMS."""
     pipeline = load_pipeline(model_path)
     return predict_sms(message, pipeline)
@@ -161,15 +158,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         description="Predict SMS class using a saved SmishKaBa model."
     )
 
-    parser.add_argument(
-        "message",
-        help="SMS message to classify.",
-    )
+    parser.add_argument("message", help="SMS message to classify.")
 
     parser.add_argument(
         "--model-path",
-        default=DEFAULT_MODEL_PATH,
-        help=f"Path to saved model pipeline. Default: {DEFAULT_MODEL_PATH}",
+        default=str(MLR_PIPELINE_PATH),
+        help=f"Path to saved model pipeline. Default: {MLR_PIPELINE_PATH}",
     )
 
     parser.add_argument(
