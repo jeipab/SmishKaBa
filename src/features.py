@@ -22,11 +22,8 @@ REQUIRED_FEATURE_COLUMNS = [TEXT_COLUMN] + NUMERIC_FEATURE_COLUMNS
 REQUIRED_TRAINING_COLUMNS = REQUIRED_FEATURE_COLUMNS + [TARGET_COLUMN]
 
 
-def validate_feature_columns(
-    df: pd.DataFrame,
-    require_target: bool = False,
-) -> None:
-    """Check required feature columns."""
+def validate_feature_columns(df: pd.DataFrame, require_target: bool = False) -> None:
+    """Check if required columns exist."""
     required_columns = REQUIRED_TRAINING_COLUMNS if require_target else REQUIRED_FEATURE_COLUMNS
     missing_columns = [col for col in required_columns if col not in df.columns]
 
@@ -38,20 +35,26 @@ def validate_feature_columns(
 
 
 def prepare_feature_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Return clean feature columns for model input."""
+    """Prepare model input features."""
     validate_feature_columns(df, require_target=False)
 
     features = df[REQUIRED_FEATURE_COLUMNS].copy()
+
+    # Text input for TF-IDF
     features[TEXT_COLUMN] = features[TEXT_COLUMN].fillna("").astype(str)
 
+    # Structured numeric features
     for column in NUMERIC_FEATURE_COLUMNS:
-        features[column] = pd.to_numeric(features[column], errors="coerce").fillna(0)
+        features[column] = pd.to_numeric(
+            features[column],
+            errors="coerce"
+        ).fillna(0)
 
     return features
 
 
 def prepare_target(df: pd.DataFrame, use_label_id: bool = False) -> pd.Series:
-    """Return target labels for training/evaluation."""
+    """Prepare target labels."""
     target_column = TARGET_ID_COLUMN if use_label_id else TARGET_COLUMN
 
     if target_column not in df.columns:
@@ -66,7 +69,7 @@ def build_feature_transformer(
     min_df: int = 2,
     max_df: float = 0.95,
 ) -> ColumnTransformer:
-    """Build TF-IDF + structured feature transformer."""
+    """Build TF-IDF + numeric feature transformer."""
     tfidf = TfidfVectorizer(
         lowercase=False,
         strip_accents="unicode",
@@ -79,7 +82,8 @@ def build_feature_transformer(
         sublinear_tf=True,
     )
 
-    transformer = ColumnTransformer(
+    # Combine text vectorization with URL/EMAIL/PHONE features
+    return ColumnTransformer(
         transformers=[
             ("tfidf", tfidf, TEXT_COLUMN),
             ("numeric", "passthrough", NUMERIC_FEATURE_COLUMNS),
@@ -89,11 +93,9 @@ def build_feature_transformer(
         verbose_feature_names_out=True,
     )
 
-    return transformer
-
 
 def get_feature_names(transformer: ColumnTransformer) -> list[str]:
-    """Return fitted transformer feature names."""
+    """Get all fitted feature names."""
     if not hasattr(transformer, "get_feature_names_out"):
         raise ValueError("Transformer does not expose feature names.")
 
@@ -101,7 +103,7 @@ def get_feature_names(transformer: ColumnTransformer) -> list[str]:
 
 
 def get_text_feature_names(transformer: ColumnTransformer) -> list[str]:
-    """Return fitted TF-IDF feature names only."""
+    """Get fitted TF-IDF feature names."""
     tfidf = transformer.named_transformers_.get("tfidf")
 
     if tfidf is None or not hasattr(tfidf, "get_feature_names_out"):
@@ -111,12 +113,15 @@ def get_text_feature_names(transformer: ColumnTransformer) -> list[str]:
 
 
 def get_numeric_feature_names() -> list[str]:
-    """Return structured feature names."""
+    """Get structured feature names."""
     return NUMERIC_FEATURE_COLUMNS.copy()
 
 
-def check_no_missing_features(df: pd.DataFrame, columns: Iterable[str] | None = None) -> None:
-    """Raise error if selected features contain missing values."""
+def check_no_missing_features(
+    df: pd.DataFrame,
+    columns: Iterable[str] | None = None,
+) -> None:
+    """Check selected feature columns for missing values."""
     selected_columns = list(columns) if columns is not None else REQUIRED_FEATURE_COLUMNS
     missing_counts = df[selected_columns].isna().sum()
     missing_counts = missing_counts[missing_counts > 0]
