@@ -1,0 +1,26 @@
+{
+    "input_rows": 10191,
+    "rows_saved": 9984,
+    "rows_removed": 207,
+    "removed_by_reason": {
+        "empty_clean_text": 2,
+        "same_message_conflicting_labels": 205
+    },
+    "possible_duplicate_clean_text_rows_kept": 3652,
+    "class_distribution_after_preprocessing": {
+        "ham": 3395,
+        "smishing": 3301,
+        "spam": 3288
+    },
+    "indicator_totals": {
+        "URL": 1736,
+        "EMAIL": 177,
+        "PHONE": 3973
+    },
+    "files": {
+        "cleaned_dataset": "data\\processed\\cleaned_sms_dataset.csv",
+        "removed_rows": "data\\processed\\audit\\preprocessing_removed_rows.csv",
+        "duplicate_report": "data\\processed\\audit\\preprocessing_duplicate_clean_text_report.csv",
+        "summary": "data\\processed\\audit\\preprocessing_summary.json"
+    }
+}
