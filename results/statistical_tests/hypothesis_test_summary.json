@@ -1,0 +1,55 @@
+{
+    "null_hypothesis": "H01: There is no significant difference in class-specific performance of NB, SVM, and MLR for ham, spam, and smishing.",
+    "method": "Pairwise McNemar tests on overall correct/incorrect predictions for the same test set.",
+    "alpha": 0.05,
+    "h01_rejected": true,
+    "significant_pair_count": 3,
+    "summary_statement": "H01 is rejected at alpha=0.05: at least one pairwise McNemar test found a significant difference in overall classification performance (NB vs SVM, NB vs MLR, SVM vs MLR).",
+    "pairwise_comparisons": [
+        {
+            "model_a": "nb",
+            "model_b": "svm",
+            "comparison": "NB vs SVM",
+            "test": "mcnemar_overall_accuracy",
+            "sample_size": 1997,
+            "model_a_only_correct": 25,
+            "model_b_only_correct": 111,
+            "discordant_pairs": 136,
+            "p_value": 3.939677440745631e-14,
+            "significant_at_0_05": true,
+            "result": "SVM performs better"
+        },
+        {
+            "model_a": "nb",
+            "model_b": "mlr",
+            "comparison": "NB vs MLR",
+            "test": "mcnemar_overall_accuracy",
+            "sample_size": 1997,
+            "model_a_only_correct": 26,
+            "model_b_only_correct": 77,
+            "discordant_pairs": 103,
+            "p_value": 4.945479817326376e-07,
+            "significant_at_0_05": true,
+            "result": "MLR performs better"
+        },
+        {
+            "model_a": "svm",
+            "model_b": "mlr",
+            "comparison": "SVM vs MLR",
+            "test": "mcnemar_overall_accuracy",
+            "sample_size": 1997,
+            "model_a_only_correct": 37,
+            "model_b_only_correct": 2,
+            "discordant_pairs": 39,
+            "p_value": 2.841261448338628e-09,
+            "significant_at_0_05": true,
+            "result": "SVM performs better"
+        }
+    ],
+    "test_file": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
+    "test_rows": 1997,
+    "files": {
+        "model_pair_comparisons": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\statistical_tests\\model_pair_comparisons.csv",
+        "hypothesis_test_summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\statistical_tests\\hypothesis_test_summary.json"
+    }
+}

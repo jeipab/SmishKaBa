@@ -43,6 +43,9 @@ SHAP_OUTPUTS_DIR = RESULTS_DIR / "shap_outputs"
 RESEARCH_OUTPUTS_DIR = RESULTS_DIR / "research"
 STATISTICAL_TESTS_DIR = RESULTS_DIR / "statistical_tests"
 
+MODEL_PAIR_COMPARISONS_PATH = STATISTICAL_TESTS_DIR / "model_pair_comparisons.csv"
+HYPOTHESIS_SUMMARY_PATH = STATISTICAL_TESTS_DIR / "hypothesis_test_summary.json"
+
 
 # Model files
 NB_PIPELINE_PATH = ARTIFACTS_DIR / "nb_pipeline.joblib"

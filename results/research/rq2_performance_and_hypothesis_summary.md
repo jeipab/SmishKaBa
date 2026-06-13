@@ -54,15 +54,19 @@ Models ranked by macro F1, then weighted F1, then accuracy:
 
 ## Hypothesis Testing (H01)
 
-Formal statistical comparison of paired predictions will be reported in `results/statistical_tests/` after running:
+**Conclusion:** H01 is rejected at alpha=0.05: at least one pairwise McNemar test found a significant difference in overall classification performance (NB vs SVM, NB vs MLR, SVM vs MLR).
 
-```bash
-python -m src.statistics
-```
+Pairwise **McNemar tests** were run on overall correct/incorrect predictions for the same test set (alpha = 0.05).
 
-Until then, use the tables above for descriptive comparison of precision, recall, and F1-score across NB, SVM, and MLR.
+| Comparison | p-value | Significant | Result |
+| --- | ---: | --- | --- |
+| NB vs SVM | 0.0000 | Yes | SVM performs better |
+| NB vs MLR | 0.0000 | Yes | MLR performs better |
+| SVM vs MLR | 0.0000 | Yes | SVM performs better |
 
 ## Source Files
 
 - `results\model_comparison.csv`
 - `results\evaluation_summary.json`
+- `results\statistical_tests\model_pair_comparisons.csv`
+- `results\statistical_tests\hypothesis_test_summary.json`
