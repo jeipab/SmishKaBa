@@ -1,4 +1,4 @@
 model_a,model_b,comparison,test,sample_size,model_a_only_correct,model_b_only_correct,discordant_pairs,p_value,significant_at_0_05,result
-nb,svm,NB vs SVM,mcnemar_overall_accuracy,1997,25,111,136,3.939677440745631e-14,True,SVM performs better
-nb,mlr,NB vs MLR,mcnemar_overall_accuracy,1997,26,77,103,4.945479817326376e-07,True,MLR performs better
-svm,mlr,SVM vs MLR,mcnemar_overall_accuracy,1997,37,2,39,2.841261448338628e-09,True,SVM performs better
+nb,svm,NB vs SVM,mcnemar_overall_accuracy,1997,26,108,134,4.479313635598752e-13,True,SVM performs better
+nb,mlr,NB vs MLR,mcnemar_overall_accuracy,1997,29,70,99,4.606242964374745e-05,True,MLR performs better
+svm,mlr,SVM vs MLR,mcnemar_overall_accuracy,1997,51,10,61,9.624425087798039e-08,True,SVM performs better
