@@ -4,13 +4,13 @@
 
 ## Overall Model Ranking
 
-Models ranked by macro F1, then weighted F1, then accuracy:
+Models ranked by macro F1, then weighted F1, then macro recall:
 
-| Rank | Model | Accuracy | Macro F1 | Weighted F1 |
-| ---: | --- | ---: | ---: | ---: |
-| 1 | SVM | 0.9639 | 0.9635 | 0.9638 |
-| 2 | MLR | 0.9434 | 0.9425 | 0.9430 |
-| 3 | NB | 0.9229 | 0.9222 | 0.9227 |
+| Rank | Model | Macro Precision | Macro Recall | Macro F1 | Weighted F1 |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 1 | SVM | 0.9642 | 0.9636 | 0.9635 | 0.9638 |
+| 2 | MLR | 0.9435 | 0.9428 | 0.9425 | 0.9430 |
+| 3 | NB | 0.9226 | 0.9223 | 0.9222 | 0.9227 |
 
 ## Class-Specific Performance
 
@@ -42,6 +42,9 @@ Models ranked by macro F1, then weighted F1, then accuracy:
 
 | Metric | Best Model |
 | --- | --- |
+| Macro Precision | SVM |
+| Macro Recall | SVM |
+| Macro F1 | SVM |
 | Ham Precision | SVM |
 | Ham Recall | SVM |
 | Ham F1 | SVM |

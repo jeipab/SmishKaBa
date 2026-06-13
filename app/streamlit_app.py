@@ -409,11 +409,30 @@ def render_research_tab() -> None:
         st.warning("Run `python -m src.evaluate` to generate model comparison results.")
     else:
         st.markdown("#### Model Comparison (Test Set)")
-        display_df = comparison_df[
-            ["model", "accuracy", "macro_f1", "ham_f1", "spam_f1", "smishing_f1"]
+
+        macro_df = comparison_df[
+            ["model", "macro_precision", "macro_recall", "macro_f1"]
         ].copy()
-        display_df["model"] = display_df["model"].str.upper()
-        st.dataframe(display_df, width="stretch", hide_index=True)
+        macro_df.columns = ["Model", "Precision", "Recall", "F1-Score"]
+        macro_df["Model"] = macro_df["Model"].str.upper()
+        st.caption("Macro-averaged metrics")
+        st.dataframe(macro_df, width="stretch", hide_index=True)
+
+        per_class_rows = []
+        for _, row in comparison_df.iterrows():
+            for label in ("ham", "spam", "smishing"):
+                per_class_rows.append(
+                    {
+                        "Model": row["model"].upper(),
+                        "Class": label,
+                        "Precision": row[f"{label}_precision"],
+                        "Recall": row[f"{label}_recall"],
+                        "F1-Score": row[f"{label}_f1"],
+                    }
+                )
+
+        st.caption("Class-specific metrics")
+        st.dataframe(pd.DataFrame(per_class_rows), width="stretch", hide_index=True)
 
     if HYPOTHESIS_SUMMARY_PATH.exists():
         hypothesis = load_json(HYPOTHESIS_SUMMARY_PATH)

@@ -3,19 +3,22 @@
     "overall_ranking": [
         {
             "model": "svm",
-            "accuracy": 0.9639459188783176,
+            "macro_precision": 0.9641557142209528,
+            "macro_recall": 0.9635596082404594,
             "macro_f1": 0.9635332152166084,
             "weighted_f1": 0.9638333086630771
         },
         {
             "model": "mlr",
-            "accuracy": 0.943415122684026,
+            "macro_precision": 0.943481903780519,
+            "macro_recall": 0.942806484295846,
             "macro_f1": 0.942514439268633,
             "weighted_f1": 0.9429890375986252
         },
         {
             "model": "nb",
-            "accuracy": 0.9228843264897346,
+            "macro_precision": 0.9226075491950052,
+            "macro_recall": 0.9223399824079798,
             "macro_f1": 0.9221610951724653,
             "weighted_f1": 0.9226724486043358
         }

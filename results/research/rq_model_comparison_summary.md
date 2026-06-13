@@ -12,11 +12,11 @@ The proposed MLR model provides direct class probabilities and serves as the pri
 
 ## Model Comparison (Test Set)
 
-| Model | Accuracy | Macro F1 | Ham F1 | Spam F1 | Smishing F1 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| NB | 0.9229 | 0.9222 | 0.9721 | 0.8856 | 0.9088 |
-| SVM | 0.9639 | 0.9635 | 0.9934 | 0.9478 | 0.9494 |
-| MLR | 0.9434 | 0.9425 | 0.9891 | 0.9110 | 0.9275 |
+| Model | Macro Precision | Macro Recall | Macro F1 | Ham P | Ham R | Ham F1 | Spam P | Spam R | Spam F1 | Smishing P | Smishing R | Smishing F1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| NB | 0.9226 | 0.9223 | 0.9222 | 0.9706 | 0.9735 | 0.9721 | 0.9075 | 0.8647 | 0.8856 | 0.8897 | 0.9288 | 0.9088 |
+| SVM | 0.9642 | 0.9636 | 0.9635 | 0.9869 | 1.0000 | 0.9934 | 0.9728 | 0.9240 | 0.9478 | 0.9327 | 0.9667 | 0.9494 |
+| MLR | 0.9435 | 0.9428 | 0.9425 | 0.9784 | 1.0000 | 0.9891 | 0.9460 | 0.8784 | 0.9110 | 0.9061 | 0.9500 | 0.9275 |
 
 ## Related Reports
 

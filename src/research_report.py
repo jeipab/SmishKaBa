@@ -38,6 +38,9 @@ SHAP_LOCAL_PATH = SHAP_OUTPUTS_DIR / f"local_{SHAP_TARGET_CLASS}_explanations.cs
 SHAP_SUMMARY_PATH = SHAP_OUTPUTS_DIR / "shap_summary.json"
 
 METRIC_COLUMNS = [
+    "macro_precision",
+    "macro_recall",
+    "macro_f1",
     "ham_precision",
     "ham_recall",
     "ham_f1",
@@ -93,13 +96,13 @@ def build_per_class_table(comparison_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_overall_ranking(comparison_df: pd.DataFrame) -> pd.DataFrame:
-    """Rank models by macro and weighted F1."""
+    """Rank models by macro F1, then weighted F1, then macro recall."""
     ranking = comparison_df[
-        ["model", "accuracy", "macro_f1", "weighted_f1"]
+        ["model", "macro_precision", "macro_recall", "macro_f1", "weighted_f1"]
     ].copy()
 
     return ranking.sort_values(
-        by=["macro_f1", "weighted_f1", "accuracy"],
+        by=["macro_f1", "weighted_f1", "macro_recall"],
         ascending=False,
     ).reset_index(drop=True)
 
@@ -349,16 +352,17 @@ def build_rq2_markdown(
         "",
         "## Overall Model Ranking",
         "",
-        "Models ranked by macro F1, then weighted F1, then accuracy:",
+        "Models ranked by macro F1, then weighted F1, then macro recall:",
         "",
-        "| Rank | Model | Accuracy | Macro F1 | Weighted F1 |",
-        "| ---: | --- | ---: | ---: | ---: |",
+        "| Rank | Model | Macro Precision | Macro Recall | Macro F1 | Weighted F1 |",
+        "| ---: | --- | ---: | ---: | ---: | ---: |",
     ]
 
     for rank, (_, row) in enumerate(ranking_df.iterrows(), start=1):
         lines.append(
             f"| {rank} | {row['model'].upper()} | "
-            f"{format_metric(row['accuracy'])} | "
+            f"{format_metric(row['macro_precision'])} | "
+            f"{format_metric(row['macro_recall'])} | "
             f"{format_metric(row['macro_f1'])} | "
             f"{format_metric(row['weighted_f1'])} |"
         )
@@ -498,17 +502,27 @@ def build_central_rq_markdown(
         "",
         "## Model Comparison (Test Set)",
         "",
-        "| Model | Accuracy | Macro F1 | Ham F1 | Spam F1 | Smishing F1 |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        "| Model | Macro Precision | Macro Recall | Macro F1 | "
+        "Ham P | Ham R | Ham F1 | Spam P | Spam R | Spam F1 | "
+        "Smishing P | Smishing R | Smishing F1 |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | "
+        "---: | ---: | ---: | ---: | ---: | ---: |",
     ]
 
     for _, row in comparison_df.iterrows():
         lines.append(
             f"| {row['model'].upper()} | "
-            f"{format_metric(row['accuracy'])} | "
+            f"{format_metric(row['macro_precision'])} | "
+            f"{format_metric(row['macro_recall'])} | "
             f"{format_metric(row['macro_f1'])} | "
+            f"{format_metric(row['ham_precision'])} | "
+            f"{format_metric(row['ham_recall'])} | "
             f"{format_metric(row['ham_f1'])} | "
+            f"{format_metric(row['spam_precision'])} | "
+            f"{format_metric(row['spam_recall'])} | "
             f"{format_metric(row['spam_f1'])} | "
+            f"{format_metric(row['smishing_precision'])} | "
+            f"{format_metric(row['smishing_recall'])} | "
             f"{format_metric(row['smishing_f1'])} |"
         )
 
