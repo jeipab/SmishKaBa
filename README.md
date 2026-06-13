@@ -12,7 +12,7 @@ SmishKaBa is a research prototype for **SMS smishing detection** using explainab
 - SHAP explainability for the proposed MLR model
 - Research summaries mapped to central RQ, RQ1, and RQ2
 - Pairwise McNemar tests for hypothesis H01
-- Streamlit app with consent gate, research results tab, and smishing SHAP view
+- Streamlit app with consent gate, research results tab, and SHAP explanation for the predicted class
 
 ## Documentation
 
@@ -52,9 +52,11 @@ SmishKaBa/
 python -m venv .venv
 .venv\Scripts\Activate.ps1          # Windows PowerShell
 python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install -r requirements-dev.txt   # optional, for tests
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt   # optional, for tests
 ```
+
+Important: install packages **after activating** `.venv`, so `python` points to the project environment.
 
 ## Dataset
 
