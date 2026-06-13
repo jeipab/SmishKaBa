@@ -44,6 +44,12 @@ EXAMPLE_MESSAGES = {
     "Smishing — prize scam": (
         "You won a cash prize! Call now or visit http://example.com to claim before expiry."
     ),
+    "Smishing — Taglish bank alert": (
+        "Hi po, your BPI account has a problem. Click http://example.com now to verify agad."
+    ),
+    "Smishing — Taglish reward": (
+        "Congrats! Nanalo ka ng reward. I-click ang link http://example.com to claim now."
+    ),
 }
 
 PRIVACY_NOTICE = (
