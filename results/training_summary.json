@@ -1,5 +1,5 @@
 {
-    "input_dataset": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\cleaned_sms_dataset.csv",
+    "input_dataset": "data/processed/cleaned_sms_dataset.csv",
     "split_strategy": "group",
     "test_size": 0.2,
     "random_state": 42,
@@ -17,13 +17,13 @@
         "spam": 658
     },
     "saved_models": {
-        "nb": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\artifacts\\nb_pipeline.joblib",
-        "svm": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\artifacts\\svm_pipeline.joblib",
-        "mlr": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\artifacts\\mlr_pipeline.joblib"
+        "nb": "artifacts/nb_pipeline.joblib",
+        "svm": "artifacts/svm_pipeline.joblib",
+        "mlr": "artifacts/mlr_pipeline.joblib"
     },
     "files": {
-        "train_split": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\train_split.csv",
-        "test_split": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
-        "training_summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\training_summary.json"
+        "train_split": "data/processed/splits/train_split.csv",
+        "test_split": "data/processed/splits/test_split.csv",
+        "training_summary": "results/training_summary.json"
     }
 }

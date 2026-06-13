@@ -18,9 +18,9 @@
         "PHONE": 3973
     },
     "files": {
-        "cleaned_dataset": "data\\processed\\cleaned_sms_dataset.csv",
-        "removed_rows": "data\\processed\\audit\\preprocessing_removed_rows.csv",
-        "duplicate_report": "data\\processed\\audit\\preprocessing_duplicate_clean_text_report.csv",
-        "summary": "data\\processed\\audit\\preprocessing_summary.json"
+        "cleaned_dataset": "data/processed/cleaned_sms_dataset.csv",
+        "removed_rows": "data/processed/audit/preprocessing_removed_rows.csv",
+        "duplicate_report": "data/processed/audit/preprocessing_duplicate_clean_text_report.csv",
+        "summary": "data/processed/audit/preprocessing_summary.json"
     }
 }

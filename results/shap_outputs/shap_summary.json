@@ -1,7 +1,7 @@
 {
-    "model_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\artifacts\\mlr_pipeline.joblib",
-    "train_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\train_split.csv",
-    "test_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
+    "model_path": "artifacts/mlr_pipeline.joblib",
+    "train_path": "data/processed/splits/train_split.csv",
+    "test_path": "data/processed/splits/test_split.csv",
     "target_class": "smishing",
     "background_rows": 200,
     "explained_rows": 500,
@@ -12,11 +12,11 @@
         "spam"
     ],
     "files": {
-        "global_mean_abs_shap": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\global_mean_abs_shap.csv",
-        "target_top_features": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\top_smishing_features.csv",
-        "target_structured_contributions": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\smishing_structured_feature_contributions.csv",
-        "local_explanations": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\local_smishing_explanations.csv",
-        "target_plot": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\top_smishing_features.png",
-        "summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\shap_summary.json"
+        "global_mean_abs_shap": "results/shap_outputs/global_mean_abs_shap.csv",
+        "target_top_features": "results/shap_outputs/top_smishing_features.csv",
+        "target_structured_contributions": "results/shap_outputs/smishing_structured_feature_contributions.csv",
+        "local_explanations": "results/shap_outputs/local_smishing_explanations.csv",
+        "target_plot": "results/shap_outputs/top_smishing_features.png",
+        "summary": "results/shap_outputs/shap_summary.json"
     }
 }
