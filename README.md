@@ -7,8 +7,8 @@ SmishKaBa is a research prototype for **SMS smishing detection** using explainab
 ## Features
 
 - Multiclass SMS classification (ham / spam / smishing)
-- Shared TF-IDF + URL / EMAIL / PHONE feature pipeline
-- Model comparison (NB, SVM, MLR) with evaluation reports
+- Shared TF-IDF + URL / EMAIL / PHONE feature pipeline (English stop words applied)
+- Model comparison (NB, SVM, MLR) with precision, recall, and F1-score
 - SHAP explainability for the proposed MLR model
 - Research summaries mapped to central RQ, RQ1, and RQ2
 - Pairwise McNemar tests for hypothesis H01
@@ -19,10 +19,10 @@ SmishKaBa is a research prototype for **SMS smishing detection** using explainab
 | File | Purpose |
 | ---- | ------- |
 | [README.md](README.md) | Setup and usage (this file) |
-| [CONTEXT.md](CONTEXT.md) | Concept paper and research requirements |
-| [CURRENT.md](CURRENT.md) | Full technical implementation reference |
-| [RESEARCH_OUTPUTS.md](RESEARCH_OUTPUTS.md) | How to read results for your paper |
-| [UPGRADE_PLAN.md](UPGRADE_PLAN.md) | Phased enhancement plan |
+| [DOCUMENTATION.md](DOCUMENTATION.md) | **Start here** — pipeline, research map, metrics, SHAP guide |
+| [archive/CONTEXT.md](archive/CONTEXT.md) | Concept paper and research requirements |
+| [archive/CURRENT.md](archive/CURRENT.md) | Full technical implementation reference |
+| [archive/RESEARCH_OUTPUTS.md](archive/RESEARCH_OUTPUTS.md) | Detailed guide to every results file |
 
 ## Requirements
 
@@ -69,6 +69,8 @@ data/raw/sms_dataset.csv
 Expected columns: `LABEL`, `TEXT`, `URL`, `EMAIL`, `PHONE`
 
 Labels: `ham`, `spam`, `smishing`
+
+The training corpus is **English-only**.
 
 ## Usage
 
@@ -121,12 +123,12 @@ pytest tests/
 | Folder / file | Contents |
 | ------------- | -------- |
 | `artifacts/` | Trained model pipelines |
-| `results/model_comparison.csv` | NB / SVM / MLR metrics |
+| `results/model_comparison.csv` | NB / SVM / MLR precision, recall, F1 |
 | `results/shap_outputs/` | SHAP CSV/PNG for MLR |
 | `results/statistical_tests/` | McNemar tests and H01 summary |
 | `results/research/` | Markdown + JSON answers for each research question |
 
-See [RESEARCH_OUTPUTS.md](RESEARCH_OUTPUTS.md) for how each file supports the paper.
+See [DOCUMENTATION.md](DOCUMENTATION.md) for how outputs map to your research questions.
 
 ## Module Overview
 
@@ -146,4 +148,5 @@ See [RESEARCH_OUTPUTS.md](RESEARCH_OUTPUTS.md) for how each file supports the pa
 
 - The Streamlit app analyzes manually entered SMS only; messages are not saved to disk.
 - MLR is the proposed explainable model; SHAP is applied to MLR only.
+- Report **precision, recall, and F1-score** in the paper — not accuracy.
 - Generated artifacts and results are kept in the repository for reproducibility.
