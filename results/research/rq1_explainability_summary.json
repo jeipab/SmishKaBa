@@ -1,0 +1,356 @@
+{
+    "research_question": "Subquestion 1: What explainability results are produced by the proposed SHAP-guided MLR model for the smishing class?",
+    "target_class": "smishing",
+    "shap_metadata": {
+        "model_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\artifacts\\mlr_pipeline.joblib",
+        "train_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\train_split.csv",
+        "test_path": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
+        "target_class": "smishing",
+        "background_rows": 200,
+        "explained_rows": 500,
+        "feature_count": 5006,
+        "class_labels": [
+            "ham",
+            "smishing",
+            "spam"
+        ],
+        "files": {
+            "global_mean_abs_shap": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\global_mean_abs_shap.csv",
+            "target_top_features": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\top_smishing_features.csv",
+            "target_structured_contributions": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\smishing_structured_feature_contributions.csv",
+            "local_explanations": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\local_smishing_explanations.csv",
+            "target_plot": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\top_smishing_features.png",
+            "summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs\\shap_summary.json"
+        }
+    },
+    "structured_feature_contributions": [
+        {
+            "class": "smishing",
+            "feature_name": "PHONE",
+            "raw_feature_name": "numeric__PHONE",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.8412643519507607
+        },
+        {
+            "class": "smishing",
+            "feature_name": "phone_count",
+            "raw_feature_name": "numeric__phone_count",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.6919299917792546
+        },
+        {
+            "class": "smishing",
+            "feature_name": "URL",
+            "raw_feature_name": "numeric__URL",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.6017640143749884
+        },
+        {
+            "class": "smishing",
+            "feature_name": "url_count",
+            "raw_feature_name": "numeric__url_count",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.2534985652988278
+        },
+        {
+            "class": "smishing",
+            "feature_name": "EMAIL",
+            "raw_feature_name": "numeric__EMAIL",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.0173728574704621
+        },
+        {
+            "class": "smishing",
+            "feature_name": "email_count",
+            "raw_feature_name": "numeric__email_count",
+            "feature_type": "structured",
+            "mean_abs_shap": 0.0173728574704621
+        }
+    ],
+    "top_tfidf_features": [
+        {
+            "class": "smishing",
+            "feature_name": "you",
+            "raw_feature_name": "tfidf__you",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0819296600831628
+        },
+        {
+            "class": "smishing",
+            "feature_name": "your",
+            "raw_feature_name": "tfidf__your",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0685193306336764
+        },
+        {
+            "class": "smishing",
+            "feature_name": "claim",
+            "raw_feature_name": "tfidf__claim",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0560121711962205
+        },
+        {
+            "class": "smishing",
+            "feature_name": "to",
+            "raw_feature_name": "tfidf__to",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0521242138991766
+        },
+        {
+            "class": "smishing",
+            "feature_name": "in",
+            "raw_feature_name": "tfidf__in",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0423371762736175
+        },
+        {
+            "class": "smishing",
+            "feature_name": "and",
+            "raw_feature_name": "tfidf__and",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0368127209795316
+        },
+        {
+            "class": "smishing",
+            "feature_name": "prize",
+            "raw_feature_name": "tfidf__prize",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0299008918079891
+        },
+        {
+            "class": "smishing",
+            "feature_name": "or",
+            "raw_feature_name": "tfidf__or",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0274674217058074
+        },
+        {
+            "class": "smishing",
+            "feature_name": "the",
+            "raw_feature_name": "tfidf__the",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0267355989780243
+        },
+        {
+            "class": "smishing",
+            "feature_name": "ingest",
+            "raw_feature_name": "tfidf__ingest",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0259997505716473
+        },
+        {
+            "class": "smishing",
+            "feature_name": "have",
+            "raw_feature_name": "tfidf__have",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0259088965722686
+        },
+        {
+            "class": "smishing",
+            "feature_name": "please",
+            "raw_feature_name": "tfidf__please",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0233520461680699
+        },
+        {
+            "class": "smishing",
+            "feature_name": "my",
+            "raw_feature_name": "tfidf__my",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0202296377972297
+        },
+        {
+            "class": "smishing",
+            "feature_name": "our",
+            "raw_feature_name": "tfidf__our",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0201454289346732
+        },
+        {
+            "class": "smishing",
+            "feature_name": "message",
+            "raw_feature_name": "tfidf__message",
+            "feature_type": "tfidf",
+            "mean_abs_shap": 0.0200913302583552
+        }
+    ],
+    "sample_local_explanations": [
+        {
+            "sample_rank": 1,
+            "true_label": "smishing",
+            "predicted_label": "smishing",
+            "target_probability": 0.9947794719643832,
+            "clean_text": "you embody a 1000 winner or guaranteed caller prize this is our final attempt to contact you to claim call phonetoken now 150ppmpobox10183bhamb64xe",
+            "top_features": [
+                {
+                    "feature_name": "PHONE",
+                    "feature_type": "structured",
+                    "shap_value": 1.119364158420581
+                },
+                {
+                    "feature_name": "phone_count",
+                    "feature_type": "structured",
+                    "shap_value": 0.7078701795256055
+                },
+                {
+                    "feature_name": "URL",
+                    "feature_type": "structured",
+                    "shap_value": -0.361927033505407
+                },
+                {
+                    "feature_name": "claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.3318461059960004
+                },
+                {
+                    "feature_name": "prize",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.307856328700524
+                },
+                {
+                    "feature_name": "to claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2424860321266754
+                },
+                {
+                    "feature_name": "phonetoken now",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2248103741887817
+                },
+                {
+                    "feature_name": "you",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2083919946669768
+                },
+                {
+                    "feature_name": "winner",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2050503625393298
+                },
+                {
+                    "feature_name": "1000",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1742356269802558
+                }
+            ]
+        },
+        {
+            "sample_rank": 2,
+            "true_label": "smishing",
+            "predicted_label": "smishing",
+            "target_probability": 0.9947511289892784,
+            "clean_text": "we have recalculated your vehicle tax you are owed 48 84 due to over urltoken the secure link http phonetoken to claim your refund",
+            "top_features": [
+                {
+                    "feature_name": "URL",
+                    "feature_type": "structured",
+                    "shap_value": 2.05091985653064
+                },
+                {
+                    "feature_name": "PHONE",
+                    "feature_type": "structured",
+                    "shap_value": 1.119364158420581
+                },
+                {
+                    "feature_name": "url_count",
+                    "feature_type": "structured",
+                    "shap_value": -0.7536055876663941
+                },
+                {
+                    "feature_name": "phone_count",
+                    "feature_type": "structured",
+                    "shap_value": 0.7078701795256055
+                },
+                {
+                    "feature_name": "claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.3039092393615153
+                },
+                {
+                    "feature_name": "link",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2475693491251317
+                },
+                {
+                    "feature_name": "your",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2241938490026803
+                },
+                {
+                    "feature_name": "to claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2232576729611765
+                },
+                {
+                    "feature_name": "due",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2002176703138354
+                },
+                {
+                    "feature_name": "http",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1979696145004504
+                }
+            ]
+        },
+        {
+            "sample_rank": 3,
+            "true_label": "smishing",
+            "predicted_label": "smishing",
+            "target_probability": 0.9935214311549252,
+            "clean_text": "winner as a valued network customer you have been selected to receivea 900 prize reward to claim call phonetoken claim code kl341 valid 12 hours only",
+            "top_features": [
+                {
+                    "feature_name": "PHONE",
+                    "feature_type": "structured",
+                    "shap_value": 1.119364158420581
+                },
+                {
+                    "feature_name": "phone_count",
+                    "feature_type": "structured",
+                    "shap_value": 0.7078701795256055
+                },
+                {
+                    "feature_name": "claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.481872306685631
+                },
+                {
+                    "feature_name": "URL",
+                    "feature_type": "structured",
+                    "shap_value": -0.361927033505407
+                },
+                {
+                    "feature_name": "prize",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.2524923694222231
+                },
+                {
+                    "feature_name": "to claim",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1982275146240081
+                },
+                {
+                    "feature_name": "winner",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1691931800252671
+                },
+                {
+                    "feature_name": "you have",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1595535763528935
+                },
+                {
+                    "feature_name": "been",
+                    "feature_type": "tfidf",
+                    "shap_value": 0.1496595060496926
+                },
+                {
+                    "feature_name": "url_count",
+                    "feature_type": "structured",
+                    "shap_value": 0.1435439214602655
+                }
+            ]
+        }
+    ]
+}

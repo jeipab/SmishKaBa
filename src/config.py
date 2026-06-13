@@ -40,6 +40,8 @@ MODEL_COMPARISON_PATH = RESULTS_DIR / "model_comparison.csv"
 CLASSIFICATION_REPORTS_DIR = RESULTS_DIR / "classification_reports"
 CONFUSION_MATRICES_DIR = RESULTS_DIR / "confusion_matrices"
 SHAP_OUTPUTS_DIR = RESULTS_DIR / "shap_outputs"
+RESEARCH_OUTPUTS_DIR = RESULTS_DIR / "research"
+STATISTICAL_TESTS_DIR = RESULTS_DIR / "statistical_tests"
 
 
 # Model files

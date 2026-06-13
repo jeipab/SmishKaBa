@@ -1,0 +1,16 @@
+{
+    "research_outputs_dir": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research",
+    "files": {
+        "central_summary_md": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq_model_comparison_summary.md",
+        "central_summary_json": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq_model_comparison_summary.json",
+        "rq1_summary_md": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq1_explainability_summary.md",
+        "rq1_summary_json": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq1_explainability_summary.json",
+        "rq2_summary_md": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq2_performance_and_hypothesis_summary.md",
+        "rq2_summary_json": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\research\\rq2_performance_and_hypothesis_summary.json"
+    },
+    "inputs": {
+        "model_comparison": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\model_comparison.csv",
+        "evaluation_summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\evaluation_summary.json",
+        "shap_outputs_dir": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\shap_outputs"
+    }
+}
