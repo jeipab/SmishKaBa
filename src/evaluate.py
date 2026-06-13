@@ -30,7 +30,7 @@ from src.config import (
     TEST_SPLIT_PATH,
 )
 from src.features import prepare_feature_dataframe, prepare_target, validate_feature_columns
-from src.utils import ensure_dir, require_file, save_json, series_to_int_dict
+from src.utils import ensure_dir, require_file, save_json, series_to_int_dict, to_relative_path
 
 
 MODEL_PATHS = {
@@ -168,9 +168,9 @@ def evaluate_model(
         "smishing_precision": float(report_dict["smishing"]["precision"]),
         "smishing_recall": float(report_dict["smishing"]["recall"]),
         "smishing_f1": float(report_dict["smishing"]["f1-score"]),
-        "classification_report": str(report_path),
-        "confusion_matrix_csv": str(matrix_csv_path),
-        "confusion_matrix_png": str(matrix_png_path),
+        "classification_report": to_relative_path(report_path),
+        "confusion_matrix_csv": to_relative_path(matrix_csv_path),
+        "confusion_matrix_png": to_relative_path(matrix_png_path),
     }
 
 
@@ -181,8 +181,8 @@ def save_evaluation_outputs(comparison_df: pd.DataFrame, summary: dict) -> None:
     comparison_df.to_csv(MODEL_COMPARISON_PATH, index=False, encoding="utf-8")
 
     summary["files"] = {
-        "model_comparison": str(MODEL_COMPARISON_PATH),
-        "evaluation_summary": str(EVALUATION_SUMMARY_PATH),
+        "model_comparison": to_relative_path(MODEL_COMPARISON_PATH),
+        "evaluation_summary": to_relative_path(EVALUATION_SUMMARY_PATH),
     }
 
     save_json(summary, EVALUATION_SUMMARY_PATH)
@@ -234,7 +234,7 @@ def evaluate_saved_models(
     comparison_df = pd.DataFrame(records)
 
     summary = {
-        "test_file": str(test_path),
+        "test_file": to_relative_path(test_path),
         "test_rows": int(len(y_test)),
         "class_distribution": series_to_int_dict(
             y_test.value_counts().sort_index()

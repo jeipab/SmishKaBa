@@ -8,6 +8,8 @@ from typing import Any
 
 import pandas as pd
 
+from src.config import PROJECT_ROOT
+
 
 def ensure_dir(path: str | Path) -> Path:
     """Create directory if needed."""
@@ -21,6 +23,17 @@ def ensure_parent_dir(path: str | Path) -> Path:
     file_path = Path(path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
     return file_path
+
+
+def to_relative_path(path: str | Path, base: str | Path | None = None) -> str:
+    """Convert a path to a project-relative POSIX string when possible."""
+    base_path = Path(base or PROJECT_ROOT).resolve()
+    file_path = Path(path).resolve()
+
+    try:
+        return file_path.relative_to(base_path).as_posix()
+    except ValueError:
+        return Path(path).as_posix()
 
 
 def save_json(data: dict[str, Any], path: str | Path) -> None:

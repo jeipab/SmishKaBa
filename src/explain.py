@@ -10,13 +10,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-from scipy import sparse
 from sklearn.pipeline import Pipeline
 
 from src.config import (
     MLR_PIPELINE_PATH,
-    NUMERIC_FEATURE_COLUMNS,
-    RANDOM_STATE,
     SHAP_BACKGROUND_SIZE,
     SHAP_EXPLAIN_SIZE,
     SHAP_LOCAL_ROWS,
@@ -32,10 +29,14 @@ from src.features import (
     prepare_target,
     validate_feature_columns,
 )
-from src.utils import ensure_dir, require_file, save_json
-
-
-STRUCTURED_FEATURES = set(NUMERIC_FEATURE_COLUMNS)
+from src.shap_utils import (
+    clean_feature_name,
+    get_feature_type,
+    normalize_shap_values,
+    sample_dataframe_rows,
+    to_dense,
+)
+from src.utils import ensure_dir, require_file, save_json, to_relative_path
 
 
 def load_split(path: str | Path) -> tuple[pd.DataFrame, pd.Series]:
@@ -59,79 +60,6 @@ def load_mlr_pipeline(model_path: str | Path) -> Pipeline:
         raise ValueError("Pipeline must contain 'features' and 'model' steps.")
 
     return pipeline
-
-
-def sample_rows(
-    X: pd.DataFrame,
-    y: pd.Series,
-    size: int,
-) -> tuple[pd.DataFrame, pd.Series]:
-    """Sample rows for faster SHAP processing."""
-    if len(X) <= size:
-        return X.reset_index(drop=True), y.reset_index(drop=True)
-
-    sampled_indices = X.sample(n=size, random_state=RANDOM_STATE).index
-
-    return (
-        X.loc[sampled_indices].reset_index(drop=True),
-        y.loc[sampled_indices].reset_index(drop=True),
-    )
-
-
-def to_dense(matrix) -> np.ndarray:
-    """Convert sparse matrix to dense."""
-    if sparse.issparse(matrix):
-        return matrix.toarray()
-
-    return np.asarray(matrix)
-
-
-def clean_feature_name(feature_name: str) -> str:
-    """Remove transformer prefix."""
-    return feature_name.split("__", 1)[1] if "__" in feature_name else feature_name
-
-
-def get_feature_type(feature_name: str) -> str:
-    """Identify feature group."""
-    cleaned = clean_feature_name(feature_name)
-    return "structured" if cleaned in STRUCTURED_FEATURES else "tfidf"
-
-
-def normalize_shap_values(
-    shap_values,
-    class_labels: list[str],
-    n_samples: int,
-    n_features: int,
-) -> dict[str, np.ndarray]:
-    """Normalize SHAP output shape."""
-    n_classes = len(class_labels)
-
-    if isinstance(shap_values, list):
-        return {
-            class_labels[index]: np.asarray(values)
-            for index, values in enumerate(shap_values)
-        }
-
-    values = np.asarray(shap_values)
-
-    if values.ndim == 2:
-        if n_classes != 1:
-            raise ValueError("Unexpected 2D SHAP output for multiclass model.")
-
-        return {class_labels[0]: values}
-
-    if values.ndim != 3:
-        raise ValueError(f"Unsupported SHAP output shape: {values.shape}")
-
-    if values.shape == (n_samples, n_features, n_classes):
-        values = np.transpose(values, (2, 0, 1))
-    elif values.shape != (n_classes, n_samples, n_features):
-        raise ValueError(f"Unexpected SHAP output shape: {values.shape}")
-
-    return {
-        class_labels[index]: values[index]
-        for index in range(n_classes)
-    }
 
 
 def build_global_importance(
@@ -275,8 +203,8 @@ def run_shap_explanation(
     X_test, y_test = load_split(test_path)
     pipeline = load_mlr_pipeline(model_path)
 
-    X_background, _ = sample_rows(X_train, y_train, background_size)
-    X_explain, y_explain = sample_rows(X_test, y_test, explain_size)
+    X_background, _ = sample_dataframe_rows(X_train, y_train, background_size)
+    X_explain, y_explain = sample_dataframe_rows(X_test, y_test, explain_size)
 
     transformer = pipeline.named_steps["features"]
     model = pipeline.named_steps["model"]
@@ -326,21 +254,21 @@ def run_shap_explanation(
     save_target_plot(target_top_df, paths["plot"], target_class)
 
     summary = {
-        "model_path": str(model_path),
-        "train_path": str(train_path),
-        "test_path": str(test_path),
+        "model_path": to_relative_path(model_path),
+        "train_path": to_relative_path(train_path),
+        "test_path": to_relative_path(test_path),
         "target_class": target_class,
         "background_rows": int(len(X_background)),
         "explained_rows": int(len(X_explain)),
         "feature_count": int(len(feature_names)),
         "class_labels": class_labels,
         "files": {
-            "global_mean_abs_shap": str(paths["global"]),
-            "target_top_features": str(paths["target_top"]),
-            "target_structured_contributions": str(paths["structured"]),
-            "local_explanations": str(paths["local"]),
-            "target_plot": str(paths["plot"]),
-            "summary": str(paths["summary"]),
+            "global_mean_abs_shap": to_relative_path(paths["global"]),
+            "target_top_features": to_relative_path(paths["target_top"]),
+            "target_structured_contributions": to_relative_path(paths["structured"]),
+            "local_explanations": to_relative_path(paths["local"]),
+            "target_plot": to_relative_path(paths["plot"]),
+            "summary": to_relative_path(paths["summary"]),
         },
     }
 

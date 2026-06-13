@@ -18,7 +18,7 @@ from src.config import (
     TEST_SPLIT_PATH,
 )
 from src.evaluate import load_models, load_test_data
-from src.utils import ensure_dir, save_json
+from src.utils import ensure_dir, save_json, to_relative_path
 
 
 MODEL_PAIRS = list(combinations(["nb", "svm", "mlr"], 2))
@@ -173,11 +173,11 @@ def run_statistical_tests(
     comparison_df.to_csv(MODEL_PAIR_COMPARISONS_PATH, index=False, encoding="utf-8")
 
     summary = build_h01_summary(comparisons)
-    summary["test_file"] = str(test_path)
+    summary["test_file"] = to_relative_path(test_path)
     summary["test_rows"] = int(len(y_test))
     summary["files"] = {
-        "model_pair_comparisons": str(MODEL_PAIR_COMPARISONS_PATH),
-        "hypothesis_test_summary": str(HYPOTHESIS_SUMMARY_PATH),
+        "model_pair_comparisons": to_relative_path(MODEL_PAIR_COMPARISONS_PATH),
+        "hypothesis_test_summary": to_relative_path(HYPOTHESIS_SUMMARY_PATH),
     }
 
     save_json(summary, HYPOTHESIS_SUMMARY_PATH)

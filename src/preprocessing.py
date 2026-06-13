@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import html
-import json
 import re
 import unicodedata
 from pathlib import Path
@@ -12,13 +11,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from src.config import (
+    CLEANED_DATA_PATH,
+    LABEL_TO_ID,
+    PREPROCESSING_DUPLICATE_REPORT_PATH,
+    PREPROCESSING_REMOVED_ROWS_PATH,
+    PREPROCESSING_SUMMARY_PATH,
+    RAW_DATA_PATH,
+)
+from src.utils import save_json, series_to_int_dict, to_relative_path
 
-DEFAULT_INPUT_PATH = "data/raw/sms_dataset.csv"
-DEFAULT_OUTPUT_PATH = "data/processed/cleaned_sms_dataset.csv"
 
 REQUIRED_COLUMNS = ["LABEL", "TEXT", "URL", "EMAIL", "PHONE"]
-
-LABEL_TO_ID = {"ham": 0, "spam": 1, "smishing": 2}
 VALID_LABELS = set(LABEL_TO_ID.keys())
 
 LABEL_ALIASES = {
@@ -251,11 +255,6 @@ def add_removal_reason(df: pd.DataFrame, mask: pd.Series, reason: str) -> None:
     )
 
 
-def series_to_int_dict(series: pd.Series) -> dict[str, int]:
-    """Convert counts to JSON-safe dict."""
-    return {str(key): int(value) for key, value in series.items()}
-
-
 def build_working_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     """Build cleaned fields and feature-ready columns."""
     df = pd.DataFrame()
@@ -358,9 +357,7 @@ def save_outputs(
     output_df.to_csv(cleaned_path, index=False, encoding="utf-8")
     removed_df[REMOVED_COLUMNS].to_csv(removed_path, index=False, encoding="utf-8")
     duplicate_report[DUPLICATE_COLUMNS].to_csv(duplicate_path, index=False, encoding="utf-8")
-
-    with open(summary_path, "w", encoding="utf-8") as file:
-        json.dump(summary, file, indent=4)
+    save_json(summary, summary_path)
 
 
 def print_summary(
@@ -391,7 +388,10 @@ def print_summary(
     print(f"Summary: {summary_path}")
 
 
-def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
+def preprocess_dataset(
+    input_path: str | Path = RAW_DATA_PATH,
+    output_path: str | Path = CLEANED_DATA_PATH,
+) -> pd.DataFrame:
     """Run preprocessing and audit export."""
     raw_df = normalize_column_names(load_dataset(input_path))
     validate_columns(raw_df)
@@ -406,16 +406,14 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
     duplicate_report, duplicate_count = build_duplicate_report(cleaned_df)
     output_df = cleaned_df[OUTPUT_COLUMNS].copy()
 
-    output_file = Path(output_path)
-    output_file.parent.mkdir(parents=True, exist_ok=True)
+    cleaned_path = Path(output_path)
+    cleaned_path.parent.mkdir(parents=True, exist_ok=True)
 
-    audit_dir = output_file.parent / "audit"
-    audit_dir.mkdir(parents=True, exist_ok=True)
+    removed_path = PREPROCESSING_REMOVED_ROWS_PATH
+    duplicate_path = PREPROCESSING_DUPLICATE_REPORT_PATH
+    summary_path = PREPROCESSING_SUMMARY_PATH
 
-    cleaned_path = output_file
-    removed_path = audit_dir / "preprocessing_removed_rows.csv"
-    duplicate_path = audit_dir / "preprocessing_duplicate_clean_text_report.csv"
-    summary_path = audit_dir / "preprocessing_summary.json"
+    removed_path.parent.mkdir(parents=True, exist_ok=True)
 
     summary = {
         "input_rows": int(len(raw_df)),
@@ -432,10 +430,10 @@ def preprocess_dataset(input_path: str, output_path: str) -> pd.DataFrame:
             output_df[["URL", "EMAIL", "PHONE"]].sum()
         ),
         "files": {
-            "cleaned_dataset": str(cleaned_path),
-            "removed_rows": str(removed_path),
-            "duplicate_report": str(duplicate_path),
-            "summary": str(summary_path),
+            "cleaned_dataset": to_relative_path(cleaned_path),
+            "removed_rows": to_relative_path(removed_path),
+            "duplicate_report": to_relative_path(duplicate_path),
+            "summary": to_relative_path(summary_path),
         },
     }
 
@@ -472,15 +470,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-i",
         "--input",
-        default=DEFAULT_INPUT_PATH,
-        help=f"Path to raw dataset. Default: {DEFAULT_INPUT_PATH}",
+        default=str(RAW_DATA_PATH),
+        help=f"Path to raw dataset. Default: {RAW_DATA_PATH}",
     )
 
     parser.add_argument(
         "-o",
         "--output",
-        default=DEFAULT_OUTPUT_PATH,
-        help=f"Path to cleaned dataset. Default: {DEFAULT_OUTPUT_PATH}",
+        default=str(CLEANED_DATA_PATH),
+        help=f"Path to cleaned dataset. Default: {CLEANED_DATA_PATH}",
     )
 
     return parser
