@@ -6,7 +6,7 @@ from typing import Iterable
 
 import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
 
 from src.config import (
     FEATURE_COLUMNS,
@@ -23,6 +23,14 @@ from src.config import (
 
 REQUIRED_FEATURE_COLUMNS = FEATURE_COLUMNS
 REQUIRED_TRAINING_COLUMNS = FEATURE_COLUMNS + [TARGET_COLUMN]
+
+# Training data is English-only; sklearn English stop words suppress generic terms.
+TFIDF_STOP_WORDS = sorted(ENGLISH_STOP_WORDS)
+
+
+def get_tfidf_stop_words() -> list[str]:
+    """Return English stop words for TF-IDF (matches the English-only training corpus)."""
+    return TFIDF_STOP_WORDS.copy()
 
 
 def validate_feature_columns(df: pd.DataFrame, require_target: bool = False) -> None:
@@ -82,6 +90,7 @@ def build_feature_transformer(
         max_features=max_features,
         min_df=min_df,
         max_df=max_df,
+        stop_words=get_tfidf_stop_words(),
         sublinear_tf=True,
     )
 
