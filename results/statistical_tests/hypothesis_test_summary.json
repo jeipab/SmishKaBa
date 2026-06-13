@@ -46,10 +46,10 @@
             "result": "SVM performs better"
         }
     ],
-    "test_file": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
+    "test_file": "data/processed/splits/test_split.csv",
     "test_rows": 1997,
     "files": {
-        "model_pair_comparisons": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\statistical_tests\\model_pair_comparisons.csv",
-        "hypothesis_test_summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\statistical_tests\\hypothesis_test_summary.json"
+        "model_pair_comparisons": "results/statistical_tests/model_pair_comparisons.csv",
+        "hypothesis_test_summary": "results/statistical_tests/hypothesis_test_summary.json"
     }
 }

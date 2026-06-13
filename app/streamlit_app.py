@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import shap
 import streamlit as st
-from scipy import sparse
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
@@ -17,6 +16,7 @@ sys.path.append(str(PROJECT_ROOT))
 from src.config import MLR_PIPELINE_PATH, SHAP_BACKGROUND_SIZE, SHAP_LOCAL_TOP_N, TRAIN_SPLIT_PATH
 from src.features import get_feature_names, prepare_feature_dataframe
 from src.predict import build_input_dataframe, load_pipeline, predict_sms
+from src.shap_utils import clean_feature_name, get_row_shap_values, to_dense
 
 
 TOP_N_FEATURES = SHAP_LOCAL_TOP_N
@@ -27,19 +27,6 @@ st.set_page_config(
     page_icon="logo.png",
     layout="centered",
 )
-
-
-def to_dense(matrix) -> np.ndarray:
-    """Convert sparse matrix to dense."""
-    if sparse.issparse(matrix):
-        return matrix.toarray()
-
-    return np.asarray(matrix)
-
-
-def clean_feature_name(feature_name: str) -> str:
-    """Remove transformer prefix."""
-    return feature_name.split("__", 1)[1] if "__" in feature_name else feature_name
 
 
 @st.cache_resource
@@ -78,22 +65,6 @@ def build_shap_explainer():
     background_matrix = to_dense(transformer.transform(background_df))
 
     return shap.LinearExplainer(model, background_matrix)
-
-
-def get_row_shap_values(shap_values, class_index: int) -> np.ndarray:
-    """Extract one-row SHAP values for selected class."""
-    if isinstance(shap_values, list):
-        return shap_values[class_index][0]
-
-    shap_array = np.asarray(shap_values)
-
-    if shap_array.ndim == 3 and shap_array.shape[0] == 1:
-        return shap_array[0, :, class_index]
-
-    if shap_array.ndim == 3:
-        return shap_array[class_index, 0, :]
-
-    return shap_array[0]
 
 
 def get_local_shap_explanation(
@@ -168,7 +139,7 @@ def display_probabilities(probabilities: dict[str, float]) -> None:
         }
     )
 
-    st.dataframe(probabilities_df, width='stretch', hide_index=True)
+    st.dataframe(probabilities_df, width="stretch", hide_index=True)
     st.bar_chart(probabilities_df.set_index("Class"))
 
 
@@ -181,7 +152,7 @@ def display_detected_features(features: dict[str, int]) -> None:
         }
     )
 
-    st.dataframe(feature_df, width='stretch', hide_index=True)
+    st.dataframe(feature_df, width="stretch", hide_index=True)
 
 
 def analyze_message(message: str) -> None:
@@ -220,7 +191,7 @@ def analyze_message(message: str) -> None:
         st.info("SHAP explanation is unavailable. Make sure the train split and MLR model exist.")
     else:
         st.write("Top features that influenced the predicted class:")
-        st.dataframe(shap_df, width='stretch', hide_index=True)
+        st.dataframe(shap_df, width="stretch", hide_index=True)
 
 
 def main() -> None:

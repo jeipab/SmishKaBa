@@ -33,7 +33,7 @@ from src.features import (
     prepare_target,
     validate_feature_columns,
 )
-from src.utils import ensure_dir, require_file, save_json, series_to_int_dict
+from src.utils import ensure_dir, require_file, save_json, series_to_int_dict, to_relative_path
 
 
 MODEL_CONFIGS = {
@@ -154,7 +154,7 @@ def train_models(
         pipeline.fit(X_train, y_train)
 
         joblib.dump(pipeline, model_path)
-        saved_models[model_name] = str(model_path)
+        saved_models[model_name] = to_relative_path(model_path)
 
         print(f"Saved {model_name.upper()}: {model_path}")
 
@@ -211,7 +211,7 @@ def build_training_summary(
 ) -> dict:
     """Build training metadata."""
     return {
-        "input_dataset": str(input_path),
+        "input_dataset": to_relative_path(input_path),
         "split_strategy": split_strategy,
         "test_size": float(test_size),
         "random_state": RANDOM_STATE,
@@ -226,9 +226,9 @@ def build_training_summary(
         ),
         "saved_models": saved_models,
         "files": {
-            "train_split": str(train_split_path),
-            "test_split": str(test_split_path),
-            "training_summary": str(summary_path),
+            "train_split": to_relative_path(train_split_path),
+            "test_split": to_relative_path(test_split_path),
+            "training_summary": to_relative_path(summary_path),
         },
     }
 

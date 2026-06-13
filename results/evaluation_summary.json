@@ -1,5 +1,5 @@
 {
-    "test_file": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\data\\processed\\splits\\test_split.csv",
+    "test_file": "data/processed/splits/test_split.csv",
     "test_rows": 1997,
     "class_distribution": {
         "ham": 679,
@@ -12,7 +12,7 @@
         "mlr"
     ],
     "files": {
-        "model_comparison": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\model_comparison.csv",
-        "evaluation_summary": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\evaluation_summary.json"
+        "model_comparison": "results/model_comparison.csv",
+        "evaluation_summary": "results/evaluation_summary.json"
     }
 }

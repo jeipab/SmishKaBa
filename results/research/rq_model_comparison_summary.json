@@ -39,9 +39,9 @@
             "smishing_precision": 0.9130434782608696,
             "smishing_recall": 0.9227272727272728,
             "smishing_f1": 0.9178598342125094,
-            "classification_report": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\classification_reports\\nb_classification_report.csv",
-            "confusion_matrix_csv": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\nb_confusion_matrix.csv",
-            "confusion_matrix_png": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\nb_confusion_matrix.png"
+            "classification_report": "results/classification_reports/nb_classification_report.csv",
+            "confusion_matrix_csv": "results/confusion_matrices/nb_confusion_matrix.csv",
+            "confusion_matrix_png": "results/confusion_matrices/nb_confusion_matrix.png"
         },
         {
             "model": "svm",
@@ -61,9 +61,9 @@
             "smishing_precision": 0.925179856115108,
             "smishing_recall": 0.9742424242424242,
             "smishing_f1": 0.9490774907749078,
-            "classification_report": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\classification_reports\\svm_classification_report.csv",
-            "confusion_matrix_csv": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\svm_confusion_matrix.csv",
-            "confusion_matrix_png": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\svm_confusion_matrix.png"
+            "classification_report": "results/classification_reports/svm_classification_report.csv",
+            "confusion_matrix_csv": "results/confusion_matrices/svm_confusion_matrix.csv",
+            "confusion_matrix_png": "results/confusion_matrices/svm_confusion_matrix.png"
         },
         {
             "model": "mlr",
@@ -83,9 +83,9 @@
             "smishing_precision": 0.9204712812960236,
             "smishing_recall": 0.946969696969697,
             "smishing_f1": 0.9335324869305452,
-            "classification_report": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\classification_reports\\mlr_classification_report.csv",
-            "confusion_matrix_csv": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\mlr_confusion_matrix.csv",
-            "confusion_matrix_png": "C:\\Users\\Asus\\Documents\\GitHub\\SmishKaBa\\results\\confusion_matrices\\mlr_confusion_matrix.png"
+            "classification_report": "results/classification_reports/mlr_classification_report.csv",
+            "confusion_matrix_csv": "results/confusion_matrices/mlr_confusion_matrix.csv",
+            "confusion_matrix_png": "results/confusion_matrices/mlr_confusion_matrix.png"
         }
     ],
     "related_reports": {
