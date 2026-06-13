@@ -13,6 +13,7 @@ import shap
 import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOGO_PATH = PROJECT_ROOT / "logo.png"
 sys.path.append(str(PROJECT_ROOT))
 
 from src.config import (
@@ -23,7 +24,6 @@ from src.config import (
     SHAP_BACKGROUND_SIZE,
     SHAP_LOCAL_TOP_N,
     SHAP_OUTPUTS_DIR,
-    SHAP_TARGET_CLASS,
     TRAIN_SPLIT_PATH,
 )
 from src.features import get_feature_names, prepare_feature_dataframe
@@ -61,7 +61,7 @@ PRIVACY_NOTICE = (
 
 st.set_page_config(
     page_title="SmishKaBa",
-    page_icon="📱",
+    page_icon=str(LOGO_PATH) if LOGO_PATH.exists() else "📱",
     layout="wide",
 )
 
@@ -255,15 +255,10 @@ def display_detected_features(features: dict[str, int]) -> None:
     st.dataframe(feature_df, width="stretch", hide_index=True)
 
 
-def build_download_payload(
-    result: dict,
-    shap_df: pd.DataFrame,
-    explain_class: str,
-) -> str:
+def build_download_payload(result: dict, shap_df: pd.DataFrame) -> str:
     """Build JSON download content."""
     payload = {
         "prediction": result,
-        "explain_class": explain_class,
         "shap_explanation": shap_df.to_dict(orient="records"),
     }
     return json.dumps(payload, indent=2)
@@ -293,12 +288,6 @@ def render_analyze_tab() -> None:
         placeholder="Paste or type an SMS message here...",
     )
 
-    explain_mode = st.radio(
-        "Explain class",
-        options=["Predicted class", f"Smishing class ({SHAP_TARGET_CLASS})"],
-        horizontal=True,
-    )
-
     analyze_disabled = not st.session_state.consent_given
 
     if analyze_disabled:
@@ -312,20 +301,14 @@ def render_analyze_tab() -> None:
         try:
             pipeline = load_model()
             result = predict_sms(message, pipeline)
-
-            explain_class = (
-                result["prediction"]
-                if explain_mode == "Predicted class"
-                else SHAP_TARGET_CLASS
-            )
+            predicted_class = result["prediction"]
 
             with st.spinner("Generating explanation..."):
-                shap_df = get_local_shap_explanation(message, explain_class)
+                shap_df = get_local_shap_explanation(message, predicted_class)
 
             st.session_state.last_result = {
                 "message": message,
                 "result": result,
-                "explain_class": explain_class,
                 "shap_df": shap_df,
             }
         except Exception as error:
@@ -338,7 +321,7 @@ def render_analyze_tab() -> None:
     payload = st.session_state.last_result
     result = payload["result"]
     shap_df = payload["shap_df"]
-    explain_class = payload["explain_class"]
+    predicted_class = result["prediction"]
 
     st.divider()
     display_prediction_badge(result["prediction"])
@@ -358,7 +341,7 @@ def render_analyze_tab() -> None:
     with st.expander("View cleaned text"):
         st.code(result["clean_text"])
 
-    st.markdown(f"#### SHAP Explanation ({explain_class})")
+    st.markdown(f"#### SHAP Explanation ({predicted_class})")
 
     if shap_df.empty:
         st.info("SHAP explanation is unavailable. Make sure the train split and MLR model exist.")
@@ -374,14 +357,44 @@ def render_analyze_tab() -> None:
 
     st.markdown("**Top text and indicator features**")
     st.dataframe(shap_df, width="stretch", hide_index=True)
-    plot_shap_bar(shap_df, f"Top SHAP Features for {explain_class}")
+    plot_shap_bar(shap_df, f"Top SHAP Features for {predicted_class}")
 
     st.download_button(
         label="Download result JSON",
-        data=build_download_payload(result, shap_df, explain_class),
+        data=build_download_payload(result, shap_df),
         file_name="smishkaba_prediction.json",
         mime="application/json",
     )
+
+
+def build_global_shap_figure(top_features_df: pd.DataFrame):
+    """Build a spaced-out horizontal bar chart for global smishing SHAP features."""
+    top_plot_df = top_features_df.head(12).sort_values("mean_abs_shap", ascending=True)
+    bar_count = len(top_plot_df)
+
+    figure = px.bar(
+        top_plot_df,
+        x="mean_abs_shap",
+        y="feature_name",
+        orientation="h",
+        labels={
+            "mean_abs_shap": "Mean |SHAP|",
+            "feature_name": "Feature",
+        },
+        title="Mean Absolute SHAP Values (Smishing Class)",
+    )
+    figure.update_layout(
+        height=max(460, bar_count * 44),
+        margin={"l": 8, "r": 16, "t": 48, "b": 28},
+        bargap=0.45,
+        title={"x": 0, "xanchor": "left", "font": {"size": 14}},
+        yaxis={"tickfont": {"size": 13}, "automargin": True},
+        xaxis={"tickfont": {"size": 11}, "title_standoff": 10},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+    figure.update_traces(marker_color="#38bdf8")
+    return figure
 
 
 def render_research_tab() -> None:
@@ -413,34 +426,42 @@ def render_research_tab() -> None:
                 hide_index=True,
             )
 
-    st.markdown("#### Confusion Matrices")
-    model_choice = st.selectbox("Select model", ["mlr", "svm", "nb"])
-    matrix_png = CONFUSION_MATRICES_DIR / f"{model_choice}_confusion_matrix.png"
+    confusion_col, shap_col = st.columns([1, 1.15], gap="large")
 
-    if matrix_png.exists():
-        st.image(str(matrix_png), caption=f"{model_choice.upper()} confusion matrix")
-    else:
-        st.caption("Confusion matrix image not found. Run evaluation first.")
+    with confusion_col:
+        st.markdown("#### Confusion Matrix")
+        model_choice = st.selectbox("Select model", ["mlr", "svm", "nb"], key="confusion_model")
+
+    with shap_col:
+        st.markdown("#### Top Global Smishing Features")
 
     top_features_df = load_top_smishing_features()
-    if top_features_df.empty:
-        st.caption("Global smishing SHAP features not found. Run `python -m src.explain` first.")
-    else:
-        st.markdown("#### Top Global Smishing Features")
-        top_plot_df = top_features_df.head(15).sort_values("mean_abs_shap", ascending=True)
-        figure = px.bar(
-            top_plot_df,
-            x="mean_abs_shap",
-            y="feature_name",
-            orientation="h",
-            title="Mean Absolute SHAP Values (Smishing Class)",
-        )
-        figure.update_layout(height=450)
-        st.plotly_chart(figure, use_container_width=True)
-
     shap_plot = SHAP_OUTPUTS_DIR / "top_smishing_features.png"
-    if shap_plot.exists():
-        st.image(str(shap_plot), caption="Saved SHAP summary plot")
+    matrix_png = CONFUSION_MATRICES_DIR / f"{model_choice}_confusion_matrix.png"
+
+    with confusion_col:
+        if matrix_png.exists():
+            st.image(
+                str(matrix_png),
+                caption=f"{model_choice.upper()} confusion matrix",
+                use_container_width=True,
+            )
+        else:
+            st.caption("Confusion matrix image not found. Run evaluation first.")
+
+    with shap_col:
+        if top_features_df.empty:
+            if shap_plot.exists():
+                st.image(
+                    str(shap_plot),
+                    caption="Saved SHAP summary plot",
+                    use_container_width=True,
+                )
+            else:
+                st.caption("Global smishing SHAP features not found. Run `python -m src.explain` first.")
+        else:
+            figure = build_global_shap_figure(top_features_df)
+            st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
 
 
 def render_about_tab() -> None:
@@ -480,6 +501,9 @@ def render_about_tab() -> None:
 def main() -> None:
     """Render Streamlit app."""
     init_session_state()
+
+    if LOGO_PATH.exists():
+        st.logo(str(LOGO_PATH), icon_image=str(LOGO_PATH), size="medium")
 
     st.title("SmishKaBa")
     st.caption("SHAP-Based Smishing Detection with Multinomial Logistic Regression")
