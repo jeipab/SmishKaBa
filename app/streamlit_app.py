@@ -217,7 +217,7 @@ def plot_shap_bar(shap_df: pd.DataFrame, title: str) -> None:
         title=title,
     )
     figure.update_layout(coloraxis_showscale=False, height=420)
-    st.plotly_chart(figure, use_container_width=True)
+    st.plotly_chart(figure, width='stretch')
 
 
 def display_prediction_badge(prediction: str) -> None:
@@ -446,7 +446,7 @@ def render_research_tab() -> None:
             st.image(
                 str(matrix_png),
                 caption=f"{model_choice.upper()} confusion matrix",
-                use_container_width=True,
+                width='stretch',
             )
         else:
             st.caption("Confusion matrix image not found. Run evaluation first.")
@@ -457,13 +457,13 @@ def render_research_tab() -> None:
                 st.image(
                     str(shap_plot),
                     caption="Saved SHAP summary plot",
-                    use_container_width=True,
+                    width='stretch',
                 )
             else:
                 st.caption("Global smishing SHAP features not found. Run `python -m src.explain` first.")
         else:
             figure = build_global_shap_figure(top_features_df)
-            st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(figure, width='stretch', config={"displayModeBar": False})
 
 
 def render_about_tab() -> None:
@@ -503,9 +503,6 @@ def render_about_tab() -> None:
 def main() -> None:
     """Render Streamlit app."""
     init_session_state()
-
-    if LOGO_PATH.exists():
-        st.logo(str(LOGO_PATH), icon_image=str(LOGO_PATH), size="medium")
 
     st.title("SmishKaBa")
     st.caption("SHAP-Based Smishing Detection with Multinomial Logistic Regression")
